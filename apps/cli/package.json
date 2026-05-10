@@ -1,0 +1,18 @@
+{
+  "name": "landing-engine",
+  "version": "0.1.0",
+  "description": "Schema-driven landing page generator — scaffold production-ready pages from a text prompt",
+  "type": "module",
+  "bin": {
+    "landing-engine": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": ["landing-page", "generator", "ai", "react", "tailwind", "schema"],
+  "license": "MIT",
+  "dependencies": {
+    "commander": "*",
+    "concurrently": "*"
+  }
+}

@@ -1,0 +1,153 @@
+import { join, dirname } from 'path';
+import type concurrently from 'concurrently';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface PreviewDeps {
+  cwd: () => string;
+  fileExists: (path: string) => boolean;
+  writeFile: (path: string, content: string) => void;
+  run: typeof concurrently;
+  workspaceRoot: string;
+}
+
+// ---------------------------------------------------------------------------
+// Workspace root detection (pure — injected `check` makes it testable)
+// ---------------------------------------------------------------------------
+
+export function findWorkspaceRoot(
+  from: string,
+  check: (path: string) => boolean
+): string {
+  let dir = from;
+  let prev = '';
+  while (dir !== prev) {
+    if (check(join(dir, 'nx.json'))) return dir;
+    prev = dir;
+    dir = dirname(dir);
+  }
+  throw new Error(
+    'Cannot find workspace root (no nx.json found). ' +
+      'Run this command from within the landing-engine monorepo.'
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Default config scaffold
+// ---------------------------------------------------------------------------
+
+export const defaultConfig = {
+  metadata: {
+    siteName: 'My Landing Page',
+    themeMode: 'light',
+    fontFamily: 'sans',
+    colors: { primary: '#6366f1', secondary: '#8b5cf6' },
+  },
+  sections: [
+    {
+      type: 'NAVBAR',
+      variant: 'sticky',
+      content: {
+        logo: 'MyApp',
+        links: [
+          { label: 'Features', href: '#features' },
+          { label: 'Pricing', href: '#pricing' },
+        ],
+        ctaText: 'Get started',
+      },
+    },
+    {
+      type: 'HERO',
+      variant: 'centered',
+      content: {
+        title: 'Welcome to My Landing Page',
+        subtitle: 'Edit config.json in this directory to customise everything.',
+        ctaText: 'Get started',
+      },
+    },
+    {
+      type: 'FEATURES',
+      variant: 'grid',
+      content: {
+        title: 'Everything you need',
+        items: [
+          { icon: '🚀', title: 'Fast', description: 'Blazing fast performance out of the box.' },
+          { icon: '🔒', title: 'Secure', description: 'Schema-validated so bad data never reaches the UI.' },
+          { icon: '🎨', title: 'Themeable', description: 'Change colors, fonts, and variants to match your brand.' },
+        ],
+      },
+    },
+    {
+      type: 'PRICING',
+      variant: 'cards',
+      content: {
+        title: 'Simple pricing',
+        tiers: [
+          {
+            name: 'Starter',
+            price: 'Free',
+            features: ['5 pages', 'Basic themes', 'Community support'],
+            ctaText: 'Get started',
+          },
+          {
+            name: 'Pro',
+            price: '$19/mo',
+            description: 'Everything you need to launch fast.',
+            features: ['Unlimited pages', 'Custom domain', 'AI generator', 'Priority support'],
+            ctaText: 'Start free trial',
+            highlighted: true,
+          },
+        ],
+      },
+    },
+    {
+      type: 'CTA',
+      variant: 'centered',
+      content: { title: 'Ready to launch?', buttonText: 'Start building now' },
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Preview action (all side-effects injected)
+// ---------------------------------------------------------------------------
+
+export function runPreview(deps: PreviewDeps): void {
+  const { cwd, fileExists, writeFile, run, workspaceRoot } = deps;
+
+  const configPath = join(cwd(), 'config.json');
+
+  if (!fileExists(configPath)) {
+    writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
+    console.log(`✓ Created config.json in ${cwd()}`);
+  } else {
+    console.log(`✓ Using existing config.json at ${configPath}`);
+  }
+
+  console.log('\n  API  →  http://localhost:4000');
+  console.log('  Web  →  http://localhost:4200\n');
+
+  const apiEntry = join(workspaceRoot, 'apps', 'api', 'src', 'index.ts');
+
+  const { result } = run(
+    [
+      {
+        command: `node --import tsx/esm ${apiEntry}`,
+        name: 'api',
+        prefixColor: 'blue',
+        env: { ...process.env, CONFIG_PATH: configPath },
+      },
+      {
+        command: 'npx nx dev @org/web',
+        name: 'web',
+        prefixColor: 'magenta',
+        cwd: workspaceRoot,
+      },
+    ],
+    { killOthers: ['failure'], prefix: 'name' }
+  );
+
+  result.catch(() => process.exit(1));
+}

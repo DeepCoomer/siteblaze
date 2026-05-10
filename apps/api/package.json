@@ -1,0 +1,10 @@
+{
+  "name": "@org/api",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "cors": "*",
+    "express": "*"
+  }
+}

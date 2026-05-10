@@ -1,0 +1,239 @@
+{
+  "metadata": {
+    "siteName": "Vault",
+    "themeMode": "light",
+    "fontFamily": "serif",
+    "enableThemeToggle": false,
+    "colors": {
+      "primary": "#0A1F44",
+      "secondary": "#FFD700"
+    }
+  },
+  "sections": [
+    {
+      "type": "NAVBAR",
+      "variant": "sticky",
+      "content": {
+        "logo": "Vault",
+        "links": [
+          {
+            "label": "Home",
+            "href": "#"
+          },
+          {
+            "label": "Features",
+            "href": "#features"
+          },
+          {
+            "label": "Pricing",
+            "href": "#pricing"
+          },
+          {
+            "label": "Team",
+            "href": "#team"
+          },
+          {
+            "label": "FAQ",
+            "href": "#faq"
+          },
+          {
+            "label": "Newsletter",
+            "href": "#newsletter"
+          }
+        ],
+        "ctaText": "Get Started"
+      }
+    },
+    {
+      "type": "HERO",
+      "variant": "centered",
+      "content": {
+        "title": "Secure Your Wealth, Simplified",
+        "subtitle": "Vault combines AI-driven insights with bank‑level security to grow and protect your personal assets.",
+        "ctaText": "Start Free Trial"
+      }
+    },
+    {
+      "type": "STATS",
+      "variant": "banner",
+      "content": {
+        "title": "Our Impact",
+        "items": [
+          {
+            "value": "$2.3B",
+            "label": "Assets Under Management",
+            "description": "Total client assets managed securely."
+          },
+          {
+            "value": "45k+",
+            "label": "Active Users",
+            "description": "Individuals trusting Vault with their wealth."
+          },
+          {
+            "value": "12%",
+            "label": "Average Annual Return",
+            "description": "Net performance after fees, YoY."
+          }
+        ]
+      }
+    },
+    {
+      "type": "FEATURES",
+      "variant": "grid",
+      "content": {
+        "title": "Why Vault",
+        "items": [
+          {
+            "icon": "🔒",
+            "title": "Bank‑Level Security",
+            "description": "AES‑256 encryption, multi‑sig wallets, and regular audits."
+          },
+          {
+            "icon": "📈",
+            "title": "AI‑Powered Portfolio",
+            "description": "Personalized asset allocation that adapts to market shifts."
+          },
+          {
+            "icon": "💳",
+            "title": "Instant Transfers",
+            "description": "Move funds between accounts in seconds with zero fees."
+          },
+          {
+            "icon": "📊",
+            "title": "Real‑Time Analytics",
+            "description": "Live dashboards showing net worth, risk exposure, and performance."
+          },
+          {
+            "icon": "🛡️",
+            "title": "Regulatory Compliance",
+            "description": "Fully licensed, KYC/AML compliant, and insured up to $1M."
+          },
+          {
+            "icon": "🤝",
+            "title": "Dedicated Support",
+            "description": "24/7 access to certified wealth advisors via chat or phone."
+          }
+        ]
+      }
+    },
+    {
+      "type": "TEAM",
+      "variant": "cards",
+      "content": {
+        "title": "Meet the Founders",
+        "items": [
+          {
+            "name": "Elena Martinez",
+            "role": "CEO & Co‑Founder",
+            "bio": "Former quant at Goldman Sachs, expert in algorithmic trading."
+          },
+          {
+            "name": "Jordan Lee",
+            "role": "CTO & Co‑Founder",
+            "bio": "Ex‑lead engineer at Stripe, specializes in secure fintech infrastructure."
+          },
+          {
+            "name": "Priya Nair",
+            "role": "CPO & Co‑Founder",
+            "bio": "UX designer with a background in behavioral finance and product strategy."
+          }
+        ]
+      }
+    },
+    {
+      "type": "PRICING",
+      "variant": "cards",
+      "content": {
+        "title": "Choose Your Plan",
+        "tiers": [
+          {
+            "name": "Basic",
+            "price": "$0/mo",
+            "description": "Essential tools for getting started.",
+            "features": [
+              "Portfolio tracker",
+              "Basic security",
+              "Email support"
+            ],
+            "ctaText": "Sign Up Free",
+            "highlighted": false
+          },
+          {
+            "name": "Pro",
+            "price": "$29/mo",
+            "description": "Advanced features for serious investors.",
+            "features": [
+              "AI portfolio optimizer",
+              "Tax‑loss harvesting",
+              "Priority chat support",
+              "Insurance up to $500k"
+            ],
+            "ctaText": "Start Trial",
+            "highlighted": true
+          },
+          {
+            "name": "Enterprise",
+            "price": "$99/mo",
+            "description": "Full suite for high‑net‑worth individuals.",
+            "features": [
+              "All Pro features",
+              "Dedicated wealth manager",
+              "Custom reporting",
+              "Higher insurance limits"
+            ],
+            "ctaText": "Request Demo",
+            "highlighted": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "FAQ",
+      "variant": "accordion",
+      "content": {
+        "title": "Frequently Asked Questions",
+        "items": [
+          {
+            "question": "Is my money safe with Vault?",
+            "answer": "Yes. We use bank‑grade encryption, multi‑sig custody, and are insured up to $1M."
+          },
+          {
+            "question": "How does the AI portfolio work?",
+            "answer": "Our engine analyzes your risk profile, goals, and market data to suggest an optimized asset mix that rebalances automatically."
+          },
+          {
+            "question": "Are there any hidden fees?",
+            "answer": "No. We charge a transparent flat subscription; transaction fees are passed through at cost."
+          },
+          {
+            "question": "Can I withdraw funds anytime?",
+            "answer": "Absolutely. Withdrawals are processed instantly and sent to your linked bank account."
+          },
+          {
+            "question": "Do you offer tax‑optimization strategies?",
+            "answer": "Yes. The Pro and Enterprise plans include tax‑loss harvesting and year‑end tax reports."
+          }
+        ]
+      }
+    },
+    {
+      "type": "NEWSLETTER",
+      "variant": "centered",
+      "content": {
+        "title": "Stay Informed",
+        "subtitle": "Get market insights, product updates, and exclusive offers straight to your inbox.",
+        "placeholder": "Enter your email",
+        "buttonText": "Subscribe"
+      }
+    },
+    {
+      "type": "CTA",
+      "variant": "centered",
+      "content": {
+        "title": "Ready to Vault Your Wealth?",
+        "buttonText": "Get Started Today",
+        "subtitle": "Join thousands of users who trust Vault with their financial future."
+      }
+    }
+  ]
+}

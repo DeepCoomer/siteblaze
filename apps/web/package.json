@@ -1,0 +1,9 @@
+{
+  "name": "@org/web",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@org/engine-core": "0.0.1",
+    "@org/ui-elements": "0.0.1"
+  }
+}

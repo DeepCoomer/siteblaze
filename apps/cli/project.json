@@ -1,0 +1,26 @@
+{
+  "name": "@org/cli",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/cli/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "command": "vitest run --config vitest.config.ts",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "preview": {
+      "command": "node --import tsx/esm src/index.ts preview",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "build": {
+      "command": "tsc -p tsconfig.json",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    }
+  }
+}

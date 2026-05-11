@@ -1,5 +1,7 @@
+import { existsSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import type concurrently from 'concurrently';
+import { startServer } from './server.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,10 +30,7 @@ export function findWorkspaceRoot(
     prev = dir;
     dir = dirname(dir);
   }
-  throw new Error(
-    'Cannot find workspace root (no nx.json found). ' +
-      'Run this command from within the landing-engine monorepo.'
-  );
+  throw new Error('Cannot find workspace root (no nx.json found).');
 }
 
 // ---------------------------------------------------------------------------
@@ -111,22 +110,38 @@ export const defaultConfig = {
 };
 
 // ---------------------------------------------------------------------------
-// Preview action (all side-effects injected)
+// Embedded preview — single server, pre-built web app (published / npx mode)
+// ---------------------------------------------------------------------------
+
+export function runEmbeddedPreview(cwd: string): void {
+  const configPath = join(cwd, 'config.json');
+
+  if (!existsSync(configPath)) {
+    writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
+    console.log(`✓  Created config.json`);
+  } else {
+    console.log(`✓  Using existing config.json at ${configPath}`);
+  }
+
+  startServer(configPath);
+}
+
+// ---------------------------------------------------------------------------
+// Monorepo dev preview — Vite dev server + tsx API (monorepo only)
 // ---------------------------------------------------------------------------
 
 export function runPreview(deps: PreviewDeps): void {
   const { cwd, fileExists, writeFile, run, workspaceRoot } = deps;
-
   const configPath = join(cwd(), 'config.json');
 
   if (!fileExists(configPath)) {
     writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
-    console.log(`✓ Created config.json in ${cwd()}`);
+    console.log(`✓  Created config.json in ${cwd()}`);
   } else {
-    console.log(`✓ Using existing config.json at ${configPath}`);
+    console.log(`✓  Using existing config.json at ${configPath}`);
   }
 
-  console.log('\n  API  →  http://localhost:4000');
+  console.log('\n  API  →  http://localhost:3000');
   console.log('  Web  →  http://localhost:4200\n');
 
   const apiEntry = join(workspaceRoot, 'apps', 'api', 'src', 'index.ts');

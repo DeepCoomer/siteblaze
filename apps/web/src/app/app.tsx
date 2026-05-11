@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { PageRenderer } from '@org/engine-core';
 
-const API_URL = 'http://localhost:4000/config';
+// Dev: separate Vite + API servers on different ports → absolute URL needed
+// Production (bundled): served from the same Express server → relative URL works
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000/config' : '/config';
 
 type ThemeMode = 'light' | 'dark' | 'midnight';
 const THEMES: ThemeMode[] = ['light', 'dark', 'midnight'];

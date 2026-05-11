@@ -1,17 +1,28 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import concurrently from 'concurrently';
-import { findWorkspaceRoot, runPreview } from './preview.js';
+import { findWorkspaceRoot, runPreview, runEmbeddedPreview } from './preview.js';
 import { eject } from './eject.js';
+import { scaffoldProject } from './scaffold.js';
+import { resolveApiKey, configureAuth } from './auth.js';
+import { generateLandingPage } from '@org/engine-core';
+import { isPublishedMode } from './server.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = findWorkspaceRoot(__dirname, existsSync);
+
+// Nullable — null when running as a published package outside the monorepo
+let workspaceRoot: string | null = null;
+try {
+  workspaceRoot = findWorkspaceRoot(__dirname, existsSync);
+} catch {
+  // published / npx mode — no monorepo present
+}
 
 // ---------------------------------------------------------------------------
-// Generic .env key reader — supports any KEY=VALUE line
+// .env key loader
 // ---------------------------------------------------------------------------
 
 function readKeyFromFile(filePath: string, keyName: string): string | undefined {
@@ -25,7 +36,7 @@ function readKeyFromFile(filePath: string, keyName: string): string | undefined 
         return trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
       }
     }
-  } catch { /* ignore unreadable file */ }
+  } catch { /* ignore */ }
   return undefined;
 }
 
@@ -39,7 +50,7 @@ function loadEnvKey(cwd: string, keyName: string): string | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// Spinner with a mutable label (updates live as each image resolves)
+// Spinner
 // ---------------------------------------------------------------------------
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -51,8 +62,7 @@ function startSpinner(initialLabel: string) {
 
   const id = setInterval(() => {
     const secs = ((Date.now() - start) / 1000).toFixed(1);
-    const line = `\r${SPINNER_FRAMES[frame % SPINNER_FRAMES.length]}  ${label}  ${secs}s `;
-    process.stdout.write(line.padEnd(80));   // pad to overwrite any leftover chars
+    process.stdout.write(`\r${SPINNER_FRAMES[frame % SPINNER_FRAMES.length]}  ${label}  ${secs}s `.padEnd(80));
     frame++;
   }, 100);
 
@@ -67,7 +77,7 @@ function startSpinner(initialLabel: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Generated config summary
+// Summary printer
 // ---------------------------------------------------------------------------
 
 type SummaryConfig = {
@@ -82,14 +92,12 @@ type SummaryConfig = {
 
 function printSummary(config: SummaryConfig) {
   const { siteName, themeMode = 'light', fontFamily = 'sans', colors } = config.metadata;
-  const sections = config.sections;
-
   console.log('\n\x1b[1m  What was generated\x1b[0m');
   console.log(`  Site      \x1b[36m${siteName}\x1b[0m`);
   console.log(`  Theme     \x1b[33m${themeMode}\x1b[0m  ·  \x1b[33m${fontFamily}\x1b[0m`);
   console.log(`  Colors    \x1b[35m${colors.primary}\x1b[0m  +  \x1b[35m${colors.secondary}\x1b[0m`);
-  console.log(`  Sections  (${sections.length})`);
-  for (const s of sections) {
+  console.log(`  Sections  (${config.sections.length})`);
+  for (const s of config.sections) {
     const variant = s.variant ? `\x1b[2m[${s.variant}]\x1b[0m` : '';
     console.log(`    \x1b[32m✓\x1b[0m  ${s.type.padEnd(14)} ${variant}`);
   }
@@ -104,54 +112,42 @@ const program = new Command();
 
 program
   .name('landing-engine')
-  .description('Schema-driven landing page engine')
-  .version('0.0.1');
+  .description('Schema-driven landing page generator')
+  .version('0.1.0');
 
 // ── preview ──────────────────────────────────────────────────────────────────
 
 program
   .command('preview')
-  .description('Start a local preview — edits to config.json appear after a page refresh')
-  .action(() =>
-    runPreview({
-      cwd: () => process.cwd(),
-      fileExists: existsSync,
-      writeFile: writeFileSync,
-      run: concurrently,
-      workspaceRoot,
-    })
-  );
+  .description('Start a local preview server — edits to config.json appear on refresh')
+  .action(() => {
+    if (isPublishedMode() || !workspaceRoot) {
+      runEmbeddedPreview(process.cwd());
+    } else {
+      runPreview({
+        cwd: () => process.cwd(),
+        fileExists: existsSync,
+        writeFile: writeFileSync,
+        run: concurrently,
+        workspaceRoot,
+      });
+    }
+  });
 
 // ── generate ─────────────────────────────────────────────────────────────────
 
 program
   .command('generate <prompt>')
-  .description('Generate a landing page config from a text description using AI')
+  .description('Generate a complete React + Tailwind project from a text prompt using AI')
   .option('-m, --model <model>', 'OpenRouter model ID', 'nvidia/nemotron-3-super-120b-a12b:free')
-  .action(async (prompt: string, opts: { model: string }) => {
-    const cwd = process.cwd();
+  .option('-o, --output <path>', 'Directory to create the project in (default: current directory)')
+  .action(async (prompt: string, opts: { model: string; output?: string }) => {
+    const outputDir = opts.output ? resolve(opts.output) : process.cwd();
 
-    // 1. Load required OpenRouter key
-    const apiKey = loadEnvKey(cwd, 'OPENROUTER_API_KEY');
-    if (!apiKey) {
-      console.error('\nError: OPENROUTER_API_KEY not found.');
-      console.error('Add it to a .env or .env.local file:\n');
-      console.error('  OPENROUTER_API_KEY=sk-or-...\n');
-      process.exit(1);
-    }
+    const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
 
     console.log(`\n\x1b[1mGenerating landing page\x1b[0m  "${prompt}"`);
     console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
-
-    // 2. Call AI service.
-    // Variable-path dynamic import prevents TypeScript from statically following
-    // the module (which would violate rootDir). At runtime tsx resolves .js → .ts.
-    type GenerateFn = (
-      prompt: string,
-      opts: { apiKey: string; model?: string }
-    ) => Promise<unknown>;
-    const aiPath = join(workspaceRoot, 'libs', 'engine-core', 'src', 'lib', 'ai.js');
-    const { generateLandingPage } = (await import(aiPath)) as { generateLandingPage: GenerateFn };
 
     const aiSpinner = startSpinner('Calling AI');
     let config: unknown;
@@ -166,23 +162,35 @@ program
 
     printSummary(config as SummaryConfig);
 
-    // 3. Write config.json
-    const configPath = join(cwd, 'config.json');
-    writeFileSync(configPath, JSON.stringify(config, null, 2));
-    console.log(`\x1b[32m✓\x1b[0m  config.json written  \x1b[2m${configPath}\x1b[0m`);
-    console.log('\nLaunching preview…\n');
+    const scaffoldSpinner = startSpinner('Scaffolding project');
+    let projectDir: string;
+    try {
+      const { mkdirSync } = await import('fs');
+      mkdirSync(outputDir, { recursive: true });
+      projectDir = scaffoldProject(config as Parameters<typeof scaffoldProject>[0], outputDir, workspaceRoot);
+      scaffoldSpinner.stop('\x1b[32m✓\x1b[0m  Project created');
+    } catch (err) {
+      scaffoldSpinner.stop('\x1b[31m✗\x1b[0m  Scaffold failed');
+      console.error(`\n${String(err)}\n`);
+      process.exit(1);
+    }
 
-    // 4. Start preview (config.json already exists, skip write)
-    runPreview({
-      cwd: () => cwd,
-      fileExists: () => true,
-      writeFile: () => undefined,
-      run: concurrently,
-      workspaceRoot,
-    });
+    const folderName = projectDir.split('/').at(-1) ?? projectDir;
+    console.log(`\n  \x1b[1mNext steps\x1b[0m`);
+    console.log(`  \x1b[36mcd ${folderName}\x1b[0m`);
+    console.log(`  \x1b[36mnpm install\x1b[0m`);
+    console.log(`  \x1b[36mnpm run dev\x1b[0m`);
+    console.log(`\n  Then edit \x1b[33msrc/LandingPage.tsx\x1b[0m to customise your page.\n`);
   });
 
-// ── eject ─────────────────────────────────────────────────────────────────
+// ── auth ──────────────────────────────────────────────────────────────────────
+
+program
+  .command('auth')
+  .description('Save your OpenRouter API key for all future runs')
+  .action(configureAuth);
+
+// ── eject ─────────────────────────────────────────────────────────────────────
 
 program
   .command('eject')

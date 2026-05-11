@@ -10,7 +10,7 @@ RESET := \033[0m
 .PHONY: help \
         install sync \
         preview generate dev-web dev-api \
-        build build-web build-libs build-engine-core build-ui-elements build-api build-cli \
+        build build-web build-libs build-engine-core build-ui-elements build-api build-cli bundle-cli \
         test test-web test-engine-core test-ui-elements test-watch test-coverage \
         typecheck typecheck-web typecheck-engine-core typecheck-ui-elements \
         e2e \
@@ -36,7 +36,8 @@ help:
 	@printf "  make build-engine-core      Build @org/engine-core only\n"
 	@printf "  make build-ui-elements      Build @org/ui-elements only\n"
 	@printf "  make build-api              Build @org/api only\n"
-	@printf "  make build-cli              Build @org/cli only\n"
+	@printf "  make build-cli              Build @org/cli only (tsc)\n"
+	@printf "  make bundle-cli             Build web app + esbuild CLI bundle (publishable)\n"
 	@printf "\n$(CYAN)Test$(RESET)\n"
 	@printf "  make test                   Run all unit tests\n"
 	@printf "  make test-web               Run @org/web tests\n"
@@ -106,6 +107,10 @@ build-api:
 
 build-cli:
 	$(NX) build @org/cli
+
+bundle-cli:
+	$(NX) build @org/web
+	node apps/cli/build.mjs
 
 # ── Test ─────────────────────────────────────────────────────────────────────
 

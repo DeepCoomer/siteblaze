@@ -4,9 +4,9 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 const app = express();
-const PORT = 4000;
+const PORT = 3000;
 
-app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(cors({ origin: ['http://localhost:4200', 'http://localhost:3000'] }));
 app.use(express.json());
 
 function getConfigPath() {

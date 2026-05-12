@@ -160,6 +160,142 @@ const NewsletterSectionSchema = z.object({
   }),
 });
 
+const LogoCloudSectionSchema = z.object({
+  ...base,
+  type: z.literal('LOGO_CLOUD'),
+  variant: z.enum(['row', 'grid', 'minimal']).default('row'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({ name: z.string(), logoUrl: z.string().optional() })).min(1),
+  }),
+});
+
+const SkillsSectionSchema = z.object({
+  ...base,
+  type: z.literal('SKILLS'),
+  variant: z.enum(['badges', 'bars', 'grid']).default('badges'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      name: z.string(),
+      level: z.number().min(1).max(5).optional(),
+      icon: z.string().optional(),
+      category: z.string().optional(),
+    })).min(1),
+  }),
+});
+
+const TimelineSectionSchema = z.object({
+  ...base,
+  type: z.literal('TIMELINE'),
+  variant: z.enum(['vertical', 'horizontal', 'minimal']).default('vertical'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      year: z.string(),
+      title: z.string(),
+      description: z.string(),
+      tag: z.string().optional(),
+    })).min(1),
+  }),
+});
+
+const PortfolioGridSectionSchema = z.object({
+  ...base,
+  type: z.literal('PORTFOLIO_GRID'),
+  variant: z.enum(['grid', 'list', 'minimal']).default('grid'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      title: z.string(),
+      description: z.string(),
+      tags: z.array(z.string()),
+      imageUrl: z.string().optional(),
+    })).min(1),
+  }),
+});
+
+const ContactFormSectionSchema = z.object({
+  ...base,
+  type: z.literal('CONTACT_FORM'),
+  variant: z.enum(['centered', 'split', 'minimal']).default('centered'),
+  content: z.object({
+    title: z.string().optional(),
+    subtitle: z.string().optional(),
+    buttonText: z.string(),
+  }),
+});
+
+const GallerySectionSchema = z.object({
+  ...base,
+  type: z.literal('GALLERY'),
+  variant: z.enum(['grid', 'masonry', 'minimal']).default('grid'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      alt: z.string(),
+      imageUrl: z.string().optional(),
+    })).min(1),
+  }),
+});
+
+const ProductGridSectionSchema = z.object({
+  ...base,
+  type: z.literal('PRODUCT_GRID'),
+  variant: z.enum(['grid', 'list', 'featured']).default('grid'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      name: z.string(),
+      price: z.string(),
+      description: z.string().optional(),
+      imageUrl: z.string().optional(),
+      badge: z.string().optional(),
+    })).min(1),
+  }),
+});
+
+const TrustBadgesSectionSchema = z.object({
+  ...base,
+  type: z.literal('TRUST_BADGES'),
+  variant: z.enum(['row', 'grid', 'minimal']).default('row'),
+  content: z.object({
+    items: z.array(z.object({
+      icon: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+    })).min(1),
+  }),
+});
+
+const CountdownSectionSchema = z.object({
+  ...base,
+  type: z.literal('COUNTDOWN'),
+  variant: z.enum(['centered', 'banner', 'minimal']).default('centered'),
+  content: z.object({
+    title: z.string().optional(),
+    date: z.string(),
+    subtitle: z.string().optional(),
+    ctaText: z.string().optional(),
+  }),
+});
+
+const ScheduleSectionSchema = z.object({
+  ...base,
+  type: z.literal('SCHEDULE'),
+  variant: z.enum(['timeline', 'grid', 'minimal']).default('timeline'),
+  content: z.object({
+    title: z.string().optional(),
+    items: z.array(z.object({
+      time: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      speaker: z.string().optional(),
+      location: z.string().optional(),
+    })).min(1),
+  }),
+});
+
 // ── Discriminated union ─────────────────────────────────────────────────────
 
 export const SectionSchema = z.discriminatedUnion('type', [
@@ -173,6 +309,16 @@ export const SectionSchema = z.discriminatedUnion('type', [
   StatsSectionSchema,
   TeamSectionSchema,
   NewsletterSectionSchema,
+  LogoCloudSectionSchema,
+  SkillsSectionSchema,
+  TimelineSectionSchema,
+  PortfolioGridSectionSchema,
+  ContactFormSectionSchema,
+  GallerySectionSchema,
+  ProductGridSectionSchema,
+  TrustBadgesSectionSchema,
+  CountdownSectionSchema,
+  ScheduleSectionSchema,
 ]);
 
 // ── Root schema ─────────────────────────────────────────────────────────────
@@ -180,6 +326,7 @@ export const SectionSchema = z.discriminatedUnion('type', [
 export const LandingPageSchema = z.object({
   metadata: z.object({
     siteName: z.string(),
+    siteType: z.enum(['landing', 'portfolio', 'agency', 'saas', 'blog', 'ecommerce', 'event']).default('landing'),
     themeMode: z.enum(['light', 'dark', 'midnight']).default('light'),
     fontFamily: z.enum(['sans', 'serif', 'mono']).default('sans'),
     enableThemeToggle: z.boolean().default(false),

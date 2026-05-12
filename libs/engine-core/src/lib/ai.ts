@@ -2,7 +2,41 @@ import { LandingPageSchema } from './schema.js';
 import type { LandingPage } from './schema.js';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-export const DEFAULT_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free';
+
+export const FREE_MODELS = [
+  // Confirmed working (sorted by speed from debug run 2026-05-12)
+  'nvidia/nemotron-3-nano-30b-a3b:free',           // 0.8s
+  'poolside/laguna-m.1:free',                      // 2.9s
+  'openai/gpt-oss-20b:free',                       // 4.1s
+  'openai/gpt-oss-120b:free',                      // 4.2s
+  'minimax/minimax-m2.5:free',                     // 4.3s
+  // Rate-limited sometimes but fast when available — 429 drops out instantly, no race penalty
+  'nousresearch/hermes-3-llama-3.1-405b:free',
+  'qwen/qwen3-coder:free',
+  'google/gemma-4-31b-it:free',
+  // Slow (60-90s) but highly reliable — last resort if everything else fails
+  'nvidia/nemotron-3-super-120b-a12b:free',
+] as const;
+
+export const DEFAULT_MODEL = FREE_MODELS[0];
+
+// Prompt refinement — nemotron-nano confirmed fastest (0.8s) with high output quality
+const REFINE_MODEL = 'nvidia/nemotron-3-nano-30b-a3b:free';
+
+// ---------------------------------------------------------------------------
+// System prompts
+// ---------------------------------------------------------------------------
+
+const REFINE_SYSTEM_PROMPT = `You are a product marketing expert. A developer has given you a brief description of their product or website idea.
+
+Expand it into a 2-4 sentence creative brief for generating a landing page. Cover:
+- What the product does
+- Who it is for (target audience)
+- The key value proposition or differentiator
+- Brand personality and tone
+
+Stay grounded in what the user described — do not invent features or audiences they did not mention.
+Output ONLY the brief. No preamble, no headers, no lists.`;
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -13,30 +47,67 @@ const SYSTEM_PROMPT = `You are a landing page architect. Your only output is a s
 Core rules:
 - Return ONLY valid JSON. No markdown, no code fences, no explanation.
 - Choose brand-appropriate hex colors for primary and secondary.
-- Pick themeMode ("light" | "dark" | "midnight") and fontFamily ("sans" | "serif" | "mono") to match the brand personality.
+- Pick themeMode and fontFamily to match the brand personality. Be decisive — most sites are NOT light:
+    dark      → tech tools, developer products, cybersecurity, gaming, crypto, SaaS dashboards, AI products
+    midnight  → luxury, premium, high-end fashion, creative agencies, dramatic or editorial brands, events
+    light     → e-commerce, food, health, education, professional services, family products
 - Set enableThemeToggle to true only if the user explicitly requests a theme switcher or dark/light toggle. Otherwise false.
-- Build a rich, multi-section page. Always include NAVBAR first and CTA last.
-- Include HERO, FEATURES, and at least 2 other relevant sections from: TESTIMONIALS, PRICING, FAQ, STATS, TEAM, NEWSLETTER.
+- You will receive a "Site category:" prefix in the user message. Use it to set siteType in metadata
+  and to choose appropriate sections. If the category is not one of the valid enum values, set
+  siteType to "landing" but still choose sections that naturally fit the described business domain.
+- Always include NAVBAR first and CTA last. Build 6–10 sections total.
 - For each section choose the most appropriate variant.
 - className and styleOverrides are optional; omit them unless needed.
 
-Section types and allowed variants:
-  NAVBAR       → variant: "sticky" | "transparent" | "minimal"
-  HERO         → variant: "centered" | "split-image" | "minimal"
-  FEATURES     → variant: "grid" | "list" | "cards"
-  TESTIMONIALS → variant: "grid" | "carousel" | "minimal"
-  PRICING      → variant: "cards" | "table" | "minimal"
-  CTA          → variant: "centered" | "banner" | "minimal"
-  FAQ          → variant: "accordion" | "grid" | "minimal"
-  STATS        → variant: "grid" | "banner" | "minimal"
-  TEAM         → variant: "grid" | "cards" | "minimal"
-  NEWSLETTER   → variant: "centered" | "banner" | "minimal"
+Site category → section selection guide:
+  landing   → HERO, FEATURES, STATS, TESTIMONIALS, PRICING, FAQ, NEWSLETTER, CTA
+  portfolio → HERO, PORTFOLIO_GRID, SKILLS, TIMELINE, TESTIMONIALS, GALLERY, CONTACT_FORM, CTA
+  agency    → HERO, LOGO_CLOUD, FEATURES, PORTFOLIO_GRID, TEAM, TESTIMONIALS, CTA
+  saas      → HERO, FEATURES, STATS, PRICING, TESTIMONIALS, FAQ, NEWSLETTER, CTA
+  blog      → HERO, FEATURES, STATS, NEWSLETTER, CTA
+  ecommerce → HERO, TRUST_BADGES, PRODUCT_GRID, FEATURES, TESTIMONIALS, FAQ, NEWSLETTER, CTA
+  event     → HERO, COUNTDOWN, SCHEDULE, FEATURES, TEAM, TESTIMONIALS, FAQ, CTA
+
+  For any other domain, choose the most fitting 6–10 sections. Common patterns:
+    restaurant / cafe    → HERO, FEATURES (menu highlights), GALLERY, STATS, TESTIMONIALS, NEWSLETTER, CTA
+    real estate          → HERO, STATS, FEATURES (services), TEAM, TESTIMONIALS, CONTACT_FORM, CTA
+    fitness / wellness   → HERO, FEATURES (classes), STATS, PRICING, TESTIMONIALS, NEWSLETTER, CTA
+    healthcare / clinic  → HERO, FEATURES (specialties), TEAM, STATS, TESTIMONIALS, FAQ, CONTACT_FORM, CTA
+    education / academy  → HERO, FEATURES (courses), STATS, PRICING, TESTIMONIALS, FAQ, NEWSLETTER, CTA
+    hospitality / hotel  → HERO, GALLERY, FEATURES (amenities), STATS, TESTIMONIALS, NEWSLETTER, CTA
+    beauty / salon       → HERO, GALLERY, FEATURES (services), PRICING, TESTIMONIALS, NEWSLETTER, CTA
+    construction / trade → HERO, FEATURES (services), STATS, PORTFOLIO_GRID, TEAM, TESTIMONIALS, CTA
+    nonprofit            → HERO, STATS, FEATURES (programs), TEAM, TESTIMONIALS, NEWSLETTER, CTA
+    For any other: pick sections that would naturally appear on a professional site for that business.
+
+All section types and allowed variants:
+  NAVBAR         → variant: "sticky" | "transparent" | "minimal"
+  HERO           → variant: "centered" | "split-image" | "minimal"
+  FEATURES       → variant: "grid" | "list" | "cards"
+  TESTIMONIALS   → variant: "grid" | "carousel" | "minimal"
+  PRICING        → variant: "cards" | "table" | "minimal"
+  CTA            → variant: "centered" | "banner" | "minimal"
+  FAQ            → variant: "accordion" | "grid" | "minimal"
+  STATS          → variant: "grid" | "banner" | "minimal"
+  TEAM           → variant: "grid" | "cards" | "minimal"
+  NEWSLETTER     → variant: "centered" | "banner" | "minimal"
+  LOGO_CLOUD     → variant: "row" | "grid" | "minimal"
+  SKILLS         → variant: "badges" | "bars" | "grid"
+  TIMELINE       → variant: "vertical" | "horizontal" | "minimal"
+  PORTFOLIO_GRID → variant: "grid" | "list" | "minimal"
+  CONTACT_FORM   → variant: "centered" | "split" | "minimal"
+  GALLERY        → variant: "grid" | "masonry" | "minimal"
+  PRODUCT_GRID   → variant: "grid" | "list" | "featured"
+  TRUST_BADGES   → variant: "row" | "grid" | "minimal"
+  COUNTDOWN      → variant: "centered" | "banner" | "minimal"
+  SCHEDULE       → variant: "timeline" | "grid" | "minimal"
 
 Full schema (use exact field names and types):
 
 {
   "metadata": {
     "siteName": "string",
+    "siteType": "landing" | "portfolio" | "agency" | "saas" | "blog" | "ecommerce" | "event",
     "themeMode": "light" | "dark" | "midnight",
     "fontFamily": "sans" | "serif" | "mono",
     "enableThemeToggle": false,
@@ -97,6 +168,46 @@ Full schema (use exact field names and types):
     {
       "type": "CTA", "variant": "centered",
       "content": { "title": "string", "buttonText": "string", "subtitle": "optional string" }
+    },
+    {
+      "type": "LOGO_CLOUD", "variant": "row",
+      "content": { "title": "optional string", "items": [{ "name": "string", "logoUrl": "optional string" }] }
+    },
+    {
+      "type": "SKILLS", "variant": "badges",
+      "content": { "title": "optional string", "items": [{ "name": "string", "level": "1-5 optional", "icon": "optional emoji", "category": "optional string" }] }
+    },
+    {
+      "type": "TIMELINE", "variant": "vertical",
+      "content": { "title": "optional string", "items": [{ "year": "string", "title": "string", "description": "string", "tag": "optional string" }] }
+    },
+    {
+      "type": "PORTFOLIO_GRID", "variant": "grid",
+      "content": { "title": "optional string", "items": [{ "title": "string", "description": "string", "tags": ["string"] }] }
+    },
+    {
+      "type": "CONTACT_FORM", "variant": "centered",
+      "content": { "title": "optional string", "subtitle": "optional string", "buttonText": "string" }
+    },
+    {
+      "type": "GALLERY", "variant": "grid",
+      "content": { "title": "optional string", "items": [{ "alt": "string" }] }
+    },
+    {
+      "type": "PRODUCT_GRID", "variant": "grid",
+      "content": { "title": "optional string", "items": [{ "name": "string", "price": "$XX", "description": "optional string", "badge": "optional string" }] }
+    },
+    {
+      "type": "TRUST_BADGES", "variant": "row",
+      "content": { "items": [{ "icon": "emoji", "title": "string", "description": "optional string" }] }
+    },
+    {
+      "type": "COUNTDOWN", "variant": "centered",
+      "content": { "title": "optional string", "date": "2026-12-31T00:00:00Z", "subtitle": "optional string", "ctaText": "optional string" }
+    },
+    {
+      "type": "SCHEDULE", "variant": "timeline",
+      "content": { "title": "optional string", "items": [{ "time": "9:00 AM", "title": "string", "description": "optional string", "speaker": "optional string", "location": "optional string" }] }
     }
   ]
 }`;
@@ -108,18 +219,125 @@ Full schema (use exact field names and types):
 type Role = 'system' | 'user' | 'assistant';
 type Message = { role: Role; content: string };
 
+export type SiteType = 'landing' | 'portfolio' | 'agency' | 'saas' | 'blog' | 'ecommerce' | 'event';
+
+const SITE_TYPE_KEYWORDS: Record<SiteType, string[]> = {
+  portfolio:  ['portfolio', 'resume', 'cv', 'freelance', 'my work', 'case studies'],
+  agency:     ['agency', 'design firm', 'consultancy', 'branding agency', 'marketing agency', 'creative agency'],
+  saas:       ['saas', 'software', 'dashboard', 'productivity tool', 'startup'],
+  blog:       ['blog', 'magazine', 'publication', 'articles', 'content site'],
+  ecommerce:  ['shop', 'store', 'ecommerce', 'e-commerce', 'retail', 'fashion', 'clothing', 'merch', 'marketplace'],
+  event:      ['conference', 'summit', 'meetup', 'webinar', 'hackathon', 'expo', 'convention', 'festival'],
+  landing:    [],
+};
+
+// Extended keyword map for domains not covered by the main SiteType enum.
+// These pass a free-form category hint to the AI rather than a schema enum value.
+const EXTENDED_CATEGORIES: Array<{ keywords: string[]; label: string }> = [
+  { keywords: ['restaurant', 'cafe', 'coffee', 'bistro', 'diner', 'bar', 'pub', 'food', 'dining', 'menu', 'kitchen', 'bakery', 'pizza', 'sushi', 'burger'], label: 'restaurant' },
+  { keywords: ['real estate', 'property', 'homes', 'realty', 'housing', 'apartments', 'listings', 'mortgage', 'realtor'], label: 'real estate' },
+  { keywords: ['salon', 'beauty', 'barber', 'hair', 'nails', 'makeup', 'skincare', 'cosmetics', 'spa'], label: 'beauty & wellness' },
+  { keywords: ['gym', 'fitness', 'yoga', 'pilates', 'crossfit', 'trainer', 'workout', 'wellness', 'meditation'], label: 'fitness & wellness' },
+  { keywords: ['hotel', 'resort', 'hostel', 'accommodation', 'lodge', 'inn', 'vacation rental', 'airbnb'], label: 'hospitality' },
+  { keywords: ['clinic', 'hospital', 'doctor', 'dentist', 'medical', 'healthcare', 'therapy', 'mental health', 'pharmacy', 'health center'], label: 'healthcare' },
+  { keywords: ['school', 'university', 'course', 'tutoring', 'education', 'learning', 'training', 'academy', 'e-learning', 'coaching'], label: 'education' },
+  { keywords: ['law', 'legal', 'attorney', 'lawyer', 'solicitor', 'firm', 'counsel'], label: 'legal services' },
+  { keywords: ['church', 'nonprofit', 'charity', 'foundation', 'volunteer', 'donation', 'ngo'], label: 'nonprofit' },
+  { keywords: ['construction', 'contractor', 'builder', 'architecture', 'renovation', 'remodel', 'plumber', 'electrician'], label: 'construction & trades' },
+  { keywords: ['wedding', 'catering', 'venue', 'event planning', 'florist', 'photography'], label: 'wedding & events' },
+  { keywords: ['travel', 'tourism', 'tour', 'vacation', 'destination', 'cruise', 'adventure'], label: 'travel & tourism' },
+  { keywords: ['music', 'band', 'musician', 'album', 'record', 'dj', 'producer'], label: 'music & entertainment' },
+  { keywords: ['podcast', 'creator', 'influencer', 'youtube', 'streaming', 'content creator'], label: 'content creator' },
+  { keywords: ['product', 'buy', 'sell', 'order', 'delivery'], label: 'ecommerce' },
+  { keywords: ['concert', 'workshop', 'event', 'meetup', 'ticket', 'speaker', 'venue schedule'], label: 'event' },
+  { keywords: ['developer', 'programmer', 'engineer', 'designer', 'photographer', 'artist', 'freelancer', 'personal site'], label: 'portfolio' },
+  { keywords: ['saas', 'software', 'app', 'platform', 'tool', 'startup', 'dashboard'], label: 'saas' },
+  { keywords: ['blog', 'newsletter', 'magazine', 'articles', 'publication'], label: 'blog' },
+  { keywords: ['agency', 'studio', 'branding', 'creative firm', 'consultancy'], label: 'agency' },
+];
+
+const SKIP_WORDS = new Set([
+  'a', 'an', 'the', 'for', 'to', 'of', 'in', 'my', 'our', 'i', 'we', 'me',
+  'new', 'best', 'great', 'good', 'cool', 'awesome', 'amazing', 'modern',
+  'create', 'build', 'make', 'generate', 'need', 'want',
+  'website', 'site', 'page', 'landing', 'web', 'online',
+]);
+
+export function inferSiteType(prompt: string): SiteType {
+  const lower = prompt.toLowerCase();
+  for (const [type, keywords] of Object.entries(SITE_TYPE_KEYWORDS) as [SiteType, string[]][]) {
+    if (type === 'landing') continue;
+    if (keywords.some(kw => lower.includes(kw))) return type;
+  }
+  return 'landing';
+}
+
+/**
+ * Returns the best human-readable category for a prompt.
+ * Checks specific extended categories first (restaurant, real estate, etc.),
+ * then falls back to known SiteType enum names, then extracts a best-effort
+ * keyword from the prompt so the AI always gets useful context.
+ */
+export function extractCategoryHint(prompt: string): string {
+  const lower = prompt.toLowerCase();
+
+  // Extended (specific) categories checked first — prevents overly-broad enum
+  // keywords like "studio" or "platform" from winning over "yoga studio" / "course platform"
+  for (const { keywords, label } of EXTENDED_CATEGORIES) {
+    if (keywords.some(kw => lower.includes(kw))) return label;
+  }
+
+  // Fall back to known SiteType enum values
+  const known = inferSiteType(prompt);
+  if (known !== 'landing') return known;
+
+  // Best-effort: pick the first two meaningful words from the prompt
+  const words = lower
+    .replace(/[^a-z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !SKIP_WORDS.has(w));
+  return words.slice(0, 2).join(' ') || 'business';
+}
+
+export type ThemeOverride = 'light' | 'dark' | 'midnight';
+
 export interface GenerateOptions {
-  model?: string;
   apiKey: string;
+  /** Force a specific model. Omit to race all FREE_MODELS. */
+  model?: string;
+  /**
+   * Category hint passed to the AI — can be a known SiteType enum value or a
+   * free-form label like "restaurant" or "real estate". Always injected as a
+   * prefix so the AI picks contextually appropriate sections.
+   */
+  siteType?: string;
+  /** User-selected theme — overrides AI's choice when provided. */
+  themeMode?: ThemeOverride;
+}
+
+export interface GenerateResult {
+  config: LandingPage;
+  /** The model that produced the accepted response. */
+  model: string;
 }
 
 // ---------------------------------------------------------------------------
 // HTTP helper
 // ---------------------------------------------------------------------------
 
-async function callModel(messages: Message[], apiKey: string, model: string): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 90_000);
+async function callModel(
+  messages: Message[],
+  apiKey: string,
+  model: string,
+  externalSignal?: AbortSignal,
+): Promise<string> {
+  const timeoutController = new AbortController();
+  const timeout = setTimeout(() => timeoutController.abort(), 90_000);
+
+  // Combine caller's cancellation signal with the local timeout signal (Node 20+)
+  const signal = externalSignal
+    ? AbortSignal.any([timeoutController.signal, externalSignal])
+    : timeoutController.signal;
 
   let res: Response;
   try {
@@ -132,18 +350,18 @@ async function callModel(messages: Message[], apiKey: string, model: string): Pr
         'X-Title': 'Landing Engine CLI',
       },
       body: JSON.stringify({ model, messages, temperature: 0.7 }),
-      signal: controller.signal,
+      signal,
     });
   } catch (err) {
-    const isTimeout = (err as Error).name === 'AbortError';
-    throw new Error(isTimeout ? 'Model timed out after 90s — try again or use a different model.' : String(err));
+    const isAbort = (err as Error).name === 'AbortError';
+    throw new Error(isAbort ? `${model}: aborted or timed out` : String(err));
   } finally {
     clearTimeout(timeout);
   }
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`OpenRouter ${res.status}: ${body}`);
+    throw new Error(`${model}: OpenRouter ${res.status} — ${body}`);
   }
 
   const data = (await res.json()) as {
@@ -151,10 +369,10 @@ async function callModel(messages: Message[], apiKey: string, model: string): Pr
     error?: { message: string };
   };
 
-  if (data.error) throw new Error(`Model error: ${data.error.message}`);
+  if (data.error) throw new Error(`${model}: ${data.error.message}`);
 
   const content = data.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error(`Model returned an empty response. Full response: ${JSON.stringify(data).slice(0, 200)}`);
+  if (!content) throw new Error(`${model}: empty response`);
   return content;
 }
 
@@ -167,13 +385,14 @@ function extractJson(raw: string): unknown {
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Single-model path (explicit --model, with one retry on Zod failure)
 // ---------------------------------------------------------------------------
 
-export async function generateLandingPage(
+async function generateSingle(
   userPrompt: string,
-  { apiKey, model = DEFAULT_MODEL }: GenerateOptions
-): Promise<LandingPage> {
+  apiKey: string,
+  model: string,
+): Promise<GenerateResult> {
   const messages: Message[] = [
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: userPrompt },
@@ -185,39 +404,134 @@ export async function generateLandingPage(
   try {
     parsed = extractJson(raw);
   } catch {
-    throw new Error(`Model returned non-JSON:\n${raw.slice(0, 300)}`);
+    throw new Error(`${model}: returned non-JSON:\n${raw.slice(0, 300)}`);
   }
 
   const first = LandingPageSchema.safeParse(parsed);
-  if (first.success) return first.data;
+  if (first.success) return { config: first.data, model };
 
+  // One retry with validation errors fed back
   const errorSummary = first.error.issues
     .map((i) => `${i.path.join('.') || 'root'}: ${i.message}`)
     .join('\n');
 
-  const retryMessages: Message[] = [
-    ...messages,
-    { role: 'assistant', content: raw },
-    {
-      role: 'user',
-      content: `The JSON you returned failed validation:\n${errorSummary}\n\nReturn ONLY the corrected JSON with no other text.`,
-    },
-  ];
-
-  const retryRaw = await callModel(retryMessages, apiKey, model);
+  const retryRaw = await callModel(
+    [
+      ...messages,
+      { role: 'assistant', content: raw },
+      {
+        role: 'user',
+        content: `Validation errors:\n${errorSummary}\n\nReturn ONLY the corrected JSON.`,
+      },
+    ],
+    apiKey,
+    model,
+  );
 
   let retryParsed: unknown;
   try {
     retryParsed = extractJson(retryRaw);
   } catch {
-    throw new Error(`Model returned non-JSON on retry:\n${retryRaw.slice(0, 300)}`);
+    throw new Error(`${model}: non-JSON on retry:\n${retryRaw.slice(0, 300)}`);
   }
 
   const second = LandingPageSchema.safeParse(retryParsed);
-  if (second.success) return second.data;
+  if (second.success) return { config: second.data, model };
 
-  const retryErrors = second.error.issues
-    .map((i) => `${i.path.join('.') || 'root'}: ${i.message}`)
-    .join('\n');
-  throw new Error(`Schema validation failed after retry:\n${retryErrors}`);
+  throw new Error(
+    `${model}: schema validation failed after retry:\n` +
+      second.error.issues
+        .map((i) => `${i.path.join('.') || 'root'}: ${i.message}`)
+        .join('\n'),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Race path (default — all FREE_MODELS in parallel, first valid Zod wins)
+// ---------------------------------------------------------------------------
+
+async function generateRace(
+  userPrompt: string,
+  apiKey: string,
+  models: readonly string[],
+): Promise<GenerateResult> {
+  const controllers = models.map(() => new AbortController());
+
+  const messages: Message[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: userPrompt },
+  ];
+
+  const attempts = models.map((model, i) =>
+    callModel(messages, apiKey, model, controllers[i].signal).then((raw) => {
+      const parsed = extractJson(raw);
+      const result = LandingPageSchema.safeParse(parsed);
+      if (!result.success) {
+        throw new Error(`${model}: schema validation failed`);
+      }
+      return { config: result.data, model };
+    }),
+  );
+
+  try {
+    const winner = await Promise.any(attempts);
+    // Cancel all remaining in-flight requests
+    controllers.forEach((c) => c.abort());
+    return winner;
+  } catch (err) {
+    const errors =
+      err instanceof AggregateError
+        ? err.errors.map((e: Error) => e.message).join('\n')
+        : String(err);
+    throw new Error(`All models failed:\n${errors}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Prompt refinement (fast pre-pass for terse user inputs)
+// ---------------------------------------------------------------------------
+
+/**
+ * Expands a short/vague user prompt into a richer creative brief.
+ * Uses a fast flash model with a 10s timeout — always falls back to the raw
+ * prompt on failure so generation is never blocked.
+ */
+export async function refinePrompt(
+  raw: string,
+  apiKey: string,
+): Promise<string> {
+  try {
+    const refined = await callModel(
+      [
+        { role: 'system', content: REFINE_SYSTEM_PROMPT },
+        { role: 'user', content: raw },
+      ],
+      apiKey,
+      REFINE_MODEL,
+      AbortSignal.timeout(10_000),
+    );
+    return refined.trim() || raw;
+  } catch {
+    return raw;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function generateLandingPage(
+  userPrompt: string,
+  { apiKey, model, siteType, themeMode }: GenerateOptions,
+): Promise<GenerateResult> {
+  const prefixes: string[] = [];
+  if (siteType) prefixes.push(`Site category: ${siteType}`);
+  if (themeMode) prefixes.push(`Theme mode: ${themeMode} (use exactly this value)`);
+  const prompt = prefixes.length
+    ? `${prefixes.join('\n')}\n\n${userPrompt}`
+    : userPrompt;
+  if (model) {
+    return generateSingle(prompt, apiKey, model);
+  }
+  return generateRace(prompt, apiKey, FREE_MODELS);
 }

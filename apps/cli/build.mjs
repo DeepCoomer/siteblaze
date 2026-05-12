@@ -72,6 +72,16 @@ const TEMPLATE_FILES = [
   'Stats.tsx',
   'Team.tsx',
   'Newsletter.tsx',
+  'LogoCloud.tsx',
+  'Skills.tsx',
+  'Timeline.tsx',
+  'PortfolioGrid.tsx',
+  'ContactForm.tsx',
+  'Gallery.tsx',
+  'ProductGrid.tsx',
+  'TrustBadges.tsx',
+  'Countdown.tsx',
+  'Schedule.tsx',
 ];
 
 if (existsSync(templateDest)) rmSync(templateDest, { recursive: true });

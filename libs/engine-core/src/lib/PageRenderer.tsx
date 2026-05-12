@@ -9,6 +9,16 @@ import { FAQ } from '@org/ui-elements';
 import { Stats } from '@org/ui-elements';
 import { Team } from '@org/ui-elements';
 import { Newsletter } from '@org/ui-elements';
+import { LogoCloud } from '@org/ui-elements';
+import { Skills } from '@org/ui-elements';
+import { Timeline } from '@org/ui-elements';
+import { PortfolioGrid } from '@org/ui-elements';
+import { ContactForm } from '@org/ui-elements';
+import { Gallery } from '@org/ui-elements';
+import { ProductGrid } from '@org/ui-elements';
+import { TrustBadges } from '@org/ui-elements';
+import { Countdown } from '@org/ui-elements';
+import { Schedule } from '@org/ui-elements';
 import { LandingPageSchema } from './schema.js';
 import type { Section } from './schema.js';
 import type { Theme } from '@org/ui-elements';
@@ -113,6 +123,36 @@ function renderSection(section: Section, theme: Theme): React.ReactElement {
       break;
     case 'NEWSLETTER':
       inner = <Newsletter content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'LOGO_CLOUD':
+      inner = <LogoCloud content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'SKILLS':
+      inner = <Skills content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'TIMELINE':
+      inner = <Timeline content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'PORTFOLIO_GRID':
+      inner = <PortfolioGrid content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'CONTACT_FORM':
+      inner = <ContactForm content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'GALLERY':
+      inner = <Gallery content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'PRODUCT_GRID':
+      inner = <ProductGrid content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'TRUST_BADGES':
+      inner = <TrustBadges content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'COUNTDOWN':
+      inner = <Countdown content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'SCHEDULE':
+      inner = <Schedule content={section.content} variant={section.variant} theme={theme} />;
       break;
     default: {
       const _: never = section;

@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { createInterface } from 'readline';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import concurrently from 'concurrently';
 import { findWorkspaceRoot, runPreview, runEmbeddedPreview } from './preview.js';
 import { eject } from './eject.js';
-import { scaffoldProject } from './scaffold.js';
+import { scaffoldProject, rewriteLandingPage, type Framework } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
-import { generateLandingPage } from '@org/engine-core';
+import { generateHeroImage } from './images.js';
+import { generateLandingPage, refinePrompt, FREE_MODELS, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
 import { isPublishedMode } from './server.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +107,109 @@ function printSummary(config: SummaryConfig) {
 }
 
 // ---------------------------------------------------------------------------
+// Banner
+// ---------------------------------------------------------------------------
+
+function printBanner() {
+  const lines = [
+    '',
+    `  \x1b[35m╭──────────────────────────────────────╮\x1b[0m`,
+    `  \x1b[35m│\x1b[0m                                      \x1b[35m│\x1b[0m`,
+    `  \x1b[35m│\x1b[0m   \x1b[1m\x1b[35m◆\x1b[0m  \x1b[1mlanding-engine\x1b[0m  \x1b[2mv0.1.0\x1b[0m          \x1b[35m│\x1b[0m`,
+    `  \x1b[35m│\x1b[0m      \x1b[2mAI · React · Tailwind\x1b[0m           \x1b[35m│\x1b[0m`,
+    `  \x1b[35m│\x1b[0m                                      \x1b[35m│\x1b[0m`,
+    `  \x1b[35m╰──────────────────────────────────────╯\x1b[0m`,
+    '',
+  ];
+  console.log(lines.join('\n'));
+}
+
+// ---------------------------------------------------------------------------
+// Site type confirmation
+// ---------------------------------------------------------------------------
+
+const SITE_TYPES: SiteType[] = ['landing', 'portfolio', 'agency', 'saas', 'blog', 'ecommerce', 'event'];
+
+const SITE_TYPE_DESC: Record<SiteType, string> = {
+  landing:   'generic marketing / product landing page',
+  portfolio: 'personal portfolio with work showcase and skills',
+  agency:    'creative or marketing agency with client logos and team',
+  saas:      'software product with pricing, features, and stats',
+  blog:      'content site with newsletter and article highlights',
+  ecommerce: 'online store with product grid, trust badges, and shopping CTAs',
+  event:     'conference, concert, or meetup with countdown and schedule',
+};
+
+async function confirmSiteType(detected: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
+
+  const knownDesc = SITE_TYPE_DESC[detected as SiteType];
+  const desc = knownDesc ? `\x1b[2m— ${knownDesc}\x1b[0m` : '';
+  console.log(`\n  Site type detected: \x1b[36m${detected}\x1b[0m  ${desc}`);
+  const answer = await ask('  Correct? [Y/n]  ');
+  const confirmed = answer.trim().toLowerCase() !== 'n';
+
+  if (confirmed) {
+    rl.close();
+    console.log();
+    return detected;
+  }
+
+  console.log('\n  Preset types:\n');
+  SITE_TYPES.forEach((t, i) => {
+    console.log(`  \x1b[36m${i + 1}\x1b[0m  ${t.padEnd(12)} \x1b[2m${SITE_TYPE_DESC[t]}\x1b[0m`);
+  });
+  console.log(`\n  Or type a custom category (e.g. "restaurant", "real estate", "gym")`);
+
+  const pick = await ask('\n  Enter number or custom name:  ');
+  rl.close();
+  console.log();
+
+  const trimmed = pick.trim();
+  const idx = parseInt(trimmed, 10) - 1;
+  if (!isNaN(idx) && idx >= 0 && idx < SITE_TYPES.length) return SITE_TYPES[idx];
+  if (trimmed.length > 0) return trimmed.toLowerCase();
+  return detected;
+}
+
+// ---------------------------------------------------------------------------
+// Theme confirmation
+// ---------------------------------------------------------------------------
+
+async function confirmTheme(explicit?: string): Promise<ThemeOverride | undefined> {
+  if (explicit === 'light' || explicit === 'dark' || explicit === 'midnight') return explicit;
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
+
+  console.log(`  \x1b[2mTheme:\x1b[0m  \x1b[36m1\x1b[0m Light  \x1b[36m2\x1b[0m Dark  \x1b[36m3\x1b[0m Midnight`);
+  const answer = await ask('  Choose [1/2/3] — default AI picks:  ');
+  rl.close();
+  console.log();
+
+  const map: Record<string, ThemeOverride> = { '1': 'light', '2': 'dark', '3': 'midnight' };
+  return map[answer.trim()];
+}
+
+// ---------------------------------------------------------------------------
+// Framework confirmation
+// ---------------------------------------------------------------------------
+
+async function confirmFramework(explicit?: string): Promise<Framework> {
+  if (explicit === 'nextjs' || explicit === 'vite') return explicit;
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
+
+  console.log(`  \x1b[2mFramework:\x1b[0m  \x1b[36m1\x1b[0m Vite  \x1b[2m(SPA, fast dev server)\x1b[0m   \x1b[36m2\x1b[0m Next.js  \x1b[2m(SSR, file-based routing)\x1b[0m`);
+  const answer = await ask('  Choose [1/2] — default Vite:  ');
+  rl.close();
+  console.log();
+  return answer.trim() === '2' ? 'nextjs' : 'vite';
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
@@ -113,7 +218,8 @@ const program = new Command();
 program
   .name('landing-engine')
   .description('Schema-driven landing page generator')
-  .version('0.1.0');
+  .version('0.1.0')
+  .hook('preAction', printBanner);
 
 // ── preview ──────────────────────────────────────────────────────────────────
 
@@ -139,35 +245,79 @@ program
 program
   .command('generate <prompt>')
   .description('Generate a complete React + Tailwind project from a text prompt using AI')
-  .option('-m, --model <model>', 'OpenRouter model ID', 'nvidia/nemotron-3-super-120b-a12b:free')
+  .option('-m, --model <model>', 'Specific OpenRouter model ID (omit to race all free models)')
   .option('-o, --output <path>', 'Directory to create the project in (default: current directory)')
-  .action(async (prompt: string, opts: { model: string; output?: string }) => {
+  .option('-t, --type <type>', 'Site type: landing | portfolio | agency | saas | blog (auto-detected if omitted)')
+  .option('-f, --framework <fw>', 'Output framework: vite | nextjs (prompted if omitted)')
+  .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
+  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string }) => {
     const outputDir = opts.output ? resolve(opts.output) : process.cwd();
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
 
     console.log(`\n\x1b[1mGenerating landing page\x1b[0m  "${prompt}"`);
-    console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
+    if (opts.model) {
+      console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
+    } else {
+      console.log(`\x1b[2mRacing ${FREE_MODELS.length} free models — first valid response wins\x1b[0m\n`);
+    }
 
-    const aiSpinner = startSpinner('Calling AI');
-    let config: unknown;
+    // Resolve site category hint sent to the AI.
+    // --type flag skips confirmation; otherwise extract a category hint
+    // (may be a known type name or a free-form label like "restaurant")
+    // and ask the user to confirm.
+    const detectedCategory = opts.type ?? extractCategoryHint(prompt);
+    const siteType = opts.type
+      ? detectedCategory
+      : await confirmSiteType(detectedCategory);
+
+    const framework  = await confirmFramework(opts.framework);
+    const themeMode  = await confirmTheme(opts.theme);
+
+    // Refine terse prompts before generation — skipped for detailed prompts (>=12 words)
+    let refinedPrompt = prompt;
+    if (prompt.trim().split(/\s+/).length < 12) {
+      const refineSpinner = startSpinner('Expanding prompt');
+      refinedPrompt = await refinePrompt(prompt, apiKey);
+      refineSpinner.stop(
+        refinedPrompt !== prompt
+          ? `\x1b[32m✓\x1b[0m  Prompt expanded`
+          : `\x1b[2m~\x1b[0m  Prompt used as-is`
+      );
+    }
+
+    const spinner = startSpinner(opts.model ? 'Calling AI' : `Racing ${FREE_MODELS.length} models`);
+
+    // Run AI + image generation truly in parallel
+    // Image gen uses raw prompt (concrete nouns work better for visual models)
+    // AI generation uses the refined prompt
+    let aiResult: Awaited<ReturnType<typeof generateLandingPage>>;
+    let tmpImagePath: string | null;
     try {
-      config = await generateLandingPage(prompt, { apiKey, model: opts.model });
-      aiSpinner.stop('\x1b[32m✓\x1b[0m  AI responded');
+      [tmpImagePath, aiResult] = await Promise.all([
+        generateHeroImage(prompt),
+        generateLandingPage(refinedPrompt, { apiKey, model: opts.model, siteType, themeMode }),
+      ]);
     } catch (err) {
-      aiSpinner.stop('\x1b[31m✗\x1b[0m  Generation failed');
+      spinner.stop('\x1b[31m✗\x1b[0m  Generation failed');
       console.error(`\n${String(err)}\n`);
       process.exit(1);
     }
 
-    printSummary(config as SummaryConfig);
+    spinner.stop(`\x1b[32m✓\x1b[0m  ${aiResult.model.split('/').at(-1)} responded`);
+    printSummary(aiResult.config as SummaryConfig);
 
     const scaffoldSpinner = startSpinner('Scaffolding project');
-    let projectDir: string;
+    let finalProjectDir: string;
     try {
-      const { mkdirSync } = await import('fs');
       mkdirSync(outputDir, { recursive: true });
-      projectDir = scaffoldProject(config as Parameters<typeof scaffoldProject>[0], outputDir, workspaceRoot);
+      finalProjectDir = scaffoldProject(
+        aiResult.config as Parameters<typeof scaffoldProject>[0],
+        outputDir,
+        workspaceRoot,
+        undefined,
+        framework
+      );
       scaffoldSpinner.stop('\x1b[32m✓\x1b[0m  Project created');
     } catch (err) {
       scaffoldSpinner.stop('\x1b[31m✗\x1b[0m  Scaffold failed');
@@ -175,12 +325,35 @@ program
       process.exit(1);
     }
 
-    const folderName = projectDir.split('/').at(-1) ?? projectDir;
+    // Copy temp image into the scaffolded project, then patch LandingPage.tsx
+    if (tmpImagePath) {
+      try {
+        const destDir = join(finalProjectDir, 'public', 'images');
+        mkdirSync(destDir, { recursive: true });
+        copyFileSync(tmpImagePath, join(destDir, 'hero.jpg'));
+        rewriteLandingPage(
+          finalProjectDir,
+          aiResult.config as Parameters<typeof rewriteLandingPage>[1],
+          '/images/hero.jpg',
+          framework
+        );
+        console.log(`  \x1b[32m✓\x1b[0m  Hero image ready`);
+      } catch {
+        console.log(`  \x1b[2m~\x1b[0m  Hero image skipped`);
+      } finally {
+        rmSync(tmpImagePath, { force: true });
+      }
+    } else {
+      console.log(`  \x1b[2m~\x1b[0m  Hero image skipped (using placeholder)`);
+    }
+
+    const folderName  = finalProjectDir.split('/').at(-1) ?? finalProjectDir;
+    const editPath    = framework === 'nextjs' ? 'src/components/LandingPage.tsx' : 'src/LandingPage.tsx';
     console.log(`\n  \x1b[1mNext steps\x1b[0m`);
     console.log(`  \x1b[36mcd ${folderName}\x1b[0m`);
     console.log(`  \x1b[36mnpm install\x1b[0m`);
     console.log(`  \x1b[36mnpm run dev\x1b[0m`);
-    console.log(`\n  Then edit \x1b[33msrc/LandingPage.tsx\x1b[0m to customise your page.\n`);
+    console.log(`\n  Then edit \x1b[33m${editPath}\x1b[0m to customise your page.\n`);
   });
 
 // ── auth ──────────────────────────────────────────────────────────────────────

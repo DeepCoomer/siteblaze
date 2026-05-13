@@ -82,6 +82,8 @@ const TEMPLATE_FILES = [
   'TrustBadges.tsx',
   'Countdown.tsx',
   'Schedule.tsx',
+  'CaseStudy.tsx',
+  'VideoEmbed.tsx',
 ];
 
 if (existsSync(templateDest)) rmSync(templateDest, { recursive: true });

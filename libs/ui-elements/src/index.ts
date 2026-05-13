@@ -22,3 +22,5 @@ export * from './lib/ProductGrid';
 export * from './lib/TrustBadges';
 export * from './lib/Countdown';
 export * from './lib/Schedule';
+export * from './lib/CaseStudy';
+export * from './lib/VideoEmbed';

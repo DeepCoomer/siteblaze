@@ -1,5 +1,7 @@
-import { existsSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
+import { tmpdir } from 'os';
+import { randomBytes } from 'crypto';
 import type concurrently from 'concurrently';
 import { startServer } from './server.js';
 
@@ -116,14 +118,23 @@ export const defaultConfig = {
 export function runEmbeddedPreview(cwd: string): void {
   const configPath = join(cwd, 'config.json');
 
-  if (!existsSync(configPath)) {
-    writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
-    console.log(`✓  Created config.json`);
-  } else {
-    console.log(`✓  Using existing config.json at ${configPath}`);
+  if (existsSync(configPath)) {
+    console.log(`✓  Using existing config.json`);
+    startServer(configPath);
+    return;
   }
 
-  startServer(configPath);
+  // No config.json in cwd — use a temp dir so we never write into a shared
+  // location (npm cache, system dirs) when invoked via npx.
+  const tmpDir = join(tmpdir(), `landing-engine-${randomBytes(4).toString('hex')}`);
+  mkdirSync(tmpDir, { recursive: true });
+  const tmpConfigPath = join(tmpDir, 'config.json');
+  writeFileSync(tmpConfigPath, JSON.stringify(defaultConfig, null, 2));
+  console.log(`✓  Created config.json in temp dir`);
+  console.log(`  \x1b[2m${tmpConfigPath}\x1b[0m`);
+  console.log(`  \x1b[2mCopy it to your project directory to persist changes.\x1b[0m`);
+
+  startServer(tmpConfigPath);
 }
 
 // ---------------------------------------------------------------------------

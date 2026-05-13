@@ -19,6 +19,8 @@ import { ProductGrid } from '@org/ui-elements';
 import { TrustBadges } from '@org/ui-elements';
 import { Countdown } from '@org/ui-elements';
 import { Schedule } from '@org/ui-elements';
+import { CaseStudy } from '@org/ui-elements';
+import { VideoEmbed } from '@org/ui-elements';
 import { LandingPageSchema } from './schema.js';
 import type { Section } from './schema.js';
 import type { Theme } from '@org/ui-elements';
@@ -153,6 +155,12 @@ function renderSection(section: Section, theme: Theme): React.ReactElement {
       break;
     case 'SCHEDULE':
       inner = <Schedule content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'CASE_STUDY':
+      inner = <CaseStudy content={section.content} variant={section.variant} theme={theme} />;
+      break;
+    case 'VIDEO_EMBED':
+      inner = <VideoEmbed content={section.content} variant={section.variant} theme={theme} />;
       break;
     default: {
       const _: never = section;

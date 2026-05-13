@@ -34,6 +34,8 @@ const SECTION_MAP: Record<string, { file: string; component: string }> = {
   TRUST_BADGES:   { file: 'TrustBadges.tsx',    component: 'TrustBadges' },
   COUNTDOWN:      { file: 'Countdown.tsx',       component: 'Countdown' },
   SCHEDULE:       { file: 'Schedule.tsx',        component: 'Schedule' },
+  CASE_STUDY:     { file: 'CaseStudy.tsx',       component: 'CaseStudy' },
+  VIDEO_EMBED:    { file: 'VideoEmbed.tsx',      component: 'VideoEmbed' },
 };
 
 export type ScaffoldConfig = {

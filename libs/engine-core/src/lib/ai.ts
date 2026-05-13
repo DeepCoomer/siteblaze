@@ -61,8 +61,8 @@ Core rules:
 
 Site category → section selection guide:
   landing   → HERO, FEATURES, STATS, TESTIMONIALS, PRICING, FAQ, NEWSLETTER, CTA
-  portfolio → HERO, PORTFOLIO_GRID, SKILLS, TIMELINE, TESTIMONIALS, GALLERY, CONTACT_FORM, CTA
-  agency    → HERO, LOGO_CLOUD, FEATURES, PORTFOLIO_GRID, TEAM, TESTIMONIALS, CTA
+  portfolio → HERO, PORTFOLIO_GRID, CASE_STUDY, SKILLS, TIMELINE, TESTIMONIALS, GALLERY, CONTACT_FORM, CTA
+  agency    → HERO, LOGO_CLOUD, FEATURES, CASE_STUDY, PORTFOLIO_GRID, TEAM, TESTIMONIALS, CTA
   saas      → HERO, FEATURES, STATS, PRICING, TESTIMONIALS, FAQ, NEWSLETTER, CTA
   blog      → HERO, FEATURES, STATS, NEWSLETTER, CTA
   ecommerce → HERO, TRUST_BADGES, PRODUCT_GRID, FEATURES, TESTIMONIALS, FAQ, NEWSLETTER, CTA
@@ -101,6 +101,8 @@ All section types and allowed variants:
   TRUST_BADGES   → variant: "row" | "grid" | "minimal"
   COUNTDOWN      → variant: "centered" | "banner" | "minimal"
   SCHEDULE       → variant: "timeline" | "grid" | "minimal"
+  CASE_STUDY     → variant: "split" | "stacked" | "minimal"
+  VIDEO_EMBED    → variant: "centered" | "split" | "minimal"
 
 Full schema (use exact field names and types):
 
@@ -208,6 +210,18 @@ Full schema (use exact field names and types):
     {
       "type": "SCHEDULE", "variant": "timeline",
       "content": { "title": "optional string", "items": [{ "time": "9:00 AM", "title": "string", "description": "optional string", "speaker": "optional string", "location": "optional string" }] }
+    },
+    {
+      "type": "VIDEO_EMBED", "variant": "centered",
+      "content": { "title": "optional string", "subtitle": "optional string", "videoUrl": "https://www.youtube.com/watch?v=...", "caption": "optional string" }
+    },
+    {
+      "type": "CASE_STUDY", "variant": "split",
+      "content": {
+        "title": "string", "subtitle": "optional string", "problem": "optional string",
+        "solution": "optional string", "tags": ["optional string"],
+        "results": [{ "value": "string", "label": "string" }], "ctaText": "optional string"
+      }
     }
   ]
 }`;

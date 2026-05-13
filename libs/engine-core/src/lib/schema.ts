@@ -296,6 +296,37 @@ const ScheduleSectionSchema = z.object({
   }),
 });
 
+const CaseStudySectionSchema = z.object({
+  ...base,
+  type: z.literal('CASE_STUDY'),
+  variant: z.enum(['split', 'stacked', 'minimal']).default('split'),
+  content: z.object({
+    title: z.string(),
+    subtitle: z.string().optional(),
+    imageUrl: z.string().optional(),
+    problem: z.string().optional(),
+    solution: z.string().optional(),
+    results: z.array(z.object({
+      value: z.string(),
+      label: z.string(),
+    })).optional(),
+    tags: z.array(z.string()).optional(),
+    ctaText: z.string().optional(),
+  }),
+});
+
+const VideoEmbedSectionSchema = z.object({
+  ...base,
+  type: z.literal('VIDEO_EMBED'),
+  variant: z.enum(['centered', 'split', 'minimal']).default('centered'),
+  content: z.object({
+    title: z.string().optional(),
+    subtitle: z.string().optional(),
+    videoUrl: z.string().optional(),
+    caption: z.string().optional(),
+  }),
+});
+
 // ── Discriminated union ─────────────────────────────────────────────────────
 
 export const SectionSchema = z.discriminatedUnion('type', [
@@ -319,6 +350,8 @@ export const SectionSchema = z.discriminatedUnion('type', [
   TrustBadgesSectionSchema,
   CountdownSectionSchema,
   ScheduleSectionSchema,
+  CaseStudySectionSchema,
+  VideoEmbedSectionSchema,
 ]);
 
 // ── Root schema ─────────────────────────────────────────────────────────────

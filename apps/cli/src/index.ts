@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import concurrently from 'concurrently';
 import { findWorkspaceRoot, runPreview, runEmbeddedPreview } from './preview.js';
 import { eject } from './eject.js';
-import { scaffoldProject, rewriteLandingPage, type Framework } from './scaffold.js';
+import { scaffoldProject, rewriteHome, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { generateHeroImage } from './images.js';
 import { generateLandingPage, refinePrompt, FREE_MODELS, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
@@ -210,6 +210,23 @@ async function confirmFramework(explicit?: string): Promise<Framework> {
 }
 
 // ---------------------------------------------------------------------------
+// UI library confirmation
+// ---------------------------------------------------------------------------
+
+async function confirmUiLib(explicit?: string): Promise<UiLib> {
+  if (explicit === 'tailwind' || explicit === 'shadcn') return explicit;
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
+
+  console.log(`  \x1b[2mUI Library:\x1b[0m  \x1b[36m1\x1b[0m Default  \x1b[2m(plain Tailwind)\x1b[0m   \x1b[36m2\x1b[0m shadcn/ui  \x1b[2m(component library)\x1b[0m`);
+  const answer = await ask('  Choose [1/2] — default plain Tailwind:  ');
+  rl.close();
+  console.log();
+  return answer.trim() === '2' ? 'shadcn' : 'tailwind';
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
@@ -250,7 +267,8 @@ program
   .option('-t, --type <type>', 'Site type: landing | portfolio | agency | saas | blog (auto-detected if omitted)')
   .option('-f, --framework <fw>', 'Output framework: vite | nextjs (prompted if omitted)')
   .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
-  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string }) => {
+  .option('--ui <lib>', 'UI library: tailwind | shadcn (prompted if omitted)')
+  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string }) => {
     const outputDir = opts.output ? resolve(opts.output) : process.cwd();
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
@@ -272,6 +290,7 @@ program
       : await confirmSiteType(detectedCategory);
 
     const framework  = await confirmFramework(opts.framework);
+    const uiLib      = await confirmUiLib(opts.ui);
     const themeMode  = await confirmTheme(opts.theme);
 
     // Refine terse prompts before generation — skipped for detailed prompts (>=12 words)
@@ -316,7 +335,8 @@ program
         outputDir,
         workspaceRoot,
         undefined,
-        framework
+        framework,
+        uiLib
       );
       scaffoldSpinner.stop('\x1b[32m✓\x1b[0m  Project created');
     } catch (err) {
@@ -331,11 +351,12 @@ program
         const destDir = join(finalProjectDir, 'public', 'images');
         mkdirSync(destDir, { recursive: true });
         copyFileSync(tmpImagePath, join(destDir, 'hero.jpg'));
-        rewriteLandingPage(
+        rewriteHome(
           finalProjectDir,
-          aiResult.config as Parameters<typeof rewriteLandingPage>[1],
+          aiResult.config as Parameters<typeof rewriteHome>[1],
           '/images/hero.jpg',
-          framework
+          framework,
+          uiLib
         );
         console.log(`  \x1b[32m✓\x1b[0m  Hero image ready`);
       } catch {
@@ -348,11 +369,15 @@ program
     }
 
     const folderName  = finalProjectDir.split('/').at(-1) ?? finalProjectDir;
-    const editPath    = framework === 'nextjs' ? 'src/components/LandingPage.tsx' : 'src/LandingPage.tsx';
+    const editPath    = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
     console.log(`\n  \x1b[1mNext steps\x1b[0m`);
     console.log(`  \x1b[36mcd ${folderName}\x1b[0m`);
     console.log(`  \x1b[36mnpm install\x1b[0m`);
     console.log(`  \x1b[36mnpm run dev\x1b[0m`);
+    if (uiLib === 'shadcn') {
+      console.log(`\n  \x1b[2mshadcn/ui components are in src/components/ui/\x1b[0m`);
+      console.log(`  \x1b[2mAdd more components: npx shadcn@latest add <component>\x1b[0m`);
+    }
     console.log(`\n  Then edit \x1b[33m${editPath}\x1b[0m to customise your page.\n`);
   });
 

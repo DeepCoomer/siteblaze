@@ -13,29 +13,29 @@ export function getTemplatesDir(workspaceRoot: string | null): string {
   throw new Error('Cannot find templates directory — try reinstalling landing-engine.');
 }
 
-const SECTION_MAP: Record<string, { file: string; component: string }> = {
-  NAVBAR:         { file: 'Navbar.tsx',        component: 'Navbar' },
-  HERO:           { file: 'Hero.tsx',           component: 'Hero' },
-  FEATURES:       { file: 'Features.tsx',       component: 'Features' },
-  CTA:            { file: 'CTASection.tsx',     component: 'CTASection' },
-  TESTIMONIALS:   { file: 'Testimonials.tsx',   component: 'Testimonials' },
-  PRICING:        { file: 'Pricing.tsx',        component: 'Pricing' },
-  FAQ:            { file: 'FAQ.tsx',            component: 'FAQ' },
+const SECTION_MAP: Record<string, { file: string; component: string; shadcnFile?: string }> = {
+  NAVBAR:         { file: 'Navbar.tsx',        component: 'Navbar',        shadcnFile: 'shadcn/Navbar.tsx' },
+  HERO:           { file: 'Hero.tsx',           component: 'Hero',           shadcnFile: 'shadcn/Hero.tsx' },
+  FEATURES:       { file: 'Features.tsx',       component: 'Features',       shadcnFile: 'shadcn/Features.tsx' },
+  CTA:            { file: 'CTASection.tsx',     component: 'CTASection',     shadcnFile: 'shadcn/CTASection.tsx' },
+  TESTIMONIALS:   { file: 'Testimonials.tsx',   component: 'Testimonials',   shadcnFile: 'shadcn/Testimonials.tsx' },
+  PRICING:        { file: 'Pricing.tsx',        component: 'Pricing',        shadcnFile: 'shadcn/Pricing.tsx' },
+  FAQ:            { file: 'FAQ.tsx',            component: 'FAQ',            shadcnFile: 'shadcn/FAQ.tsx' },
   STATS:          { file: 'Stats.tsx',          component: 'Stats' },
   TEAM:           { file: 'Team.tsx',           component: 'Team' },
-  NEWSLETTER:     { file: 'Newsletter.tsx',     component: 'Newsletter' },
+  NEWSLETTER:     { file: 'Newsletter.tsx',     component: 'Newsletter',     shadcnFile: 'shadcn/Newsletter.tsx' },
   LOGO_CLOUD:     { file: 'LogoCloud.tsx',      component: 'LogoCloud' },
-  SKILLS:         { file: 'Skills.tsx',         component: 'Skills' },
+  SKILLS:         { file: 'Skills.tsx',         component: 'Skills',         shadcnFile: 'shadcn/Skills.tsx' },
   TIMELINE:       { file: 'Timeline.tsx',       component: 'Timeline' },
-  PORTFOLIO_GRID: { file: 'PortfolioGrid.tsx',  component: 'PortfolioGrid' },
-  CONTACT_FORM:   { file: 'ContactForm.tsx',    component: 'ContactForm' },
+  PORTFOLIO_GRID: { file: 'PortfolioGrid.tsx',  component: 'PortfolioGrid',  shadcnFile: 'shadcn/PortfolioGrid.tsx' },
+  CONTACT_FORM:   { file: 'ContactForm.tsx',    component: 'ContactForm',    shadcnFile: 'shadcn/ContactForm.tsx' },
   GALLERY:        { file: 'Gallery.tsx',        component: 'Gallery' },
-  PRODUCT_GRID:   { file: 'ProductGrid.tsx',    component: 'ProductGrid' },
+  PRODUCT_GRID:   { file: 'ProductGrid.tsx',    component: 'ProductGrid',    shadcnFile: 'shadcn/ProductGrid.tsx' },
   TRUST_BADGES:   { file: 'TrustBadges.tsx',    component: 'TrustBadges' },
-  COUNTDOWN:      { file: 'Countdown.tsx',       component: 'Countdown' },
-  SCHEDULE:       { file: 'Schedule.tsx',        component: 'Schedule' },
-  CASE_STUDY:     { file: 'CaseStudy.tsx',       component: 'CaseStudy' },
-  VIDEO_EMBED:    { file: 'VideoEmbed.tsx',      component: 'VideoEmbed' },
+  COUNTDOWN:      { file: 'Countdown.tsx',      component: 'Countdown' },
+  SCHEDULE:       { file: 'Schedule.tsx',       component: 'Schedule' },
+  CASE_STUDY:     { file: 'CaseStudy.tsx',      component: 'CaseStudy' },
+  VIDEO_EMBED:    { file: 'VideoEmbed.tsx',     component: 'VideoEmbed' },
 };
 
 export type ScaffoldConfig = {
@@ -52,9 +52,14 @@ export function toKebab(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'landing-page';
 }
 
-// Rewrite './theme.js' imports to '../theme' for the sections/ subdirectory
+// Rewrite './theme.js' imports to '../theme' for the sections/ subdirectory (plain variants)
 function rewriteThemeImport(source: string): string {
   return source.replace(/from ['"]\.\/theme\.js['"]/g, "from '../theme'");
+}
+
+// Rewrite '../theme.js' imports to '../theme' for shadcn variants (one level deeper in source)
+function rewriteThemeImportFromSubdir(source: string): string {
+  return source.replace(/from ['"]\.\.\/theme\.js['"]/g, "from '../theme'");
 }
 
 const THEME_BG: Record<string, string> = {
@@ -69,8 +74,433 @@ const FONT_CLASS: Record<string, string> = {
 };
 
 export type Framework = 'vite' | 'nextjs';
+export type UiLib    = 'tailwind' | 'shadcn';
 
-function generateLandingPageTsx(
+// ---------------------------------------------------------------------------
+// shadcn/ui extras
+// ---------------------------------------------------------------------------
+
+const SHADCN_CSS_VARS = `
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+`;
+
+const SHADCN_TAILWIND_THEME = `
+      colors: {
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+        popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
+        primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+        secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+        muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+        accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+        destructive: { DEFAULT: 'hsl(var(--destructive))', foreground: 'hsl(var(--destructive-foreground))' },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      keyframes: {
+        'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
+        'accordion-up':   { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up':   'accordion-up 0.2s ease-out',
+      },`;
+
+function writeShadcnExtras(
+  projectDir: string,
+  componentsDir: string,
+  framework: Framework,
+  projectName: string,
+  usedTypes: string[],
+): void {
+  // lib/utils.ts
+  const libDir = join(projectDir, 'src', 'lib');
+  mkdirSync(libDir, { recursive: true });
+  writeFileSync(join(libDir, 'utils.ts'), `import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+`);
+
+  // components/ui/ primitives — always at src/components/ui/ regardless of framework
+  const uiDir = join(projectDir, 'src', 'components', 'ui');
+  mkdirSync(uiDir, { recursive: true });
+
+  writeFileSync(join(uiDir, 'button.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'outline' | 'ghost' | 'link' | 'destructive';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'default', size = 'default', ...props }, ref) => (
+    <button
+      ref={ref}
+      className={cn(
+        'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+        {
+          default:     'bg-primary text-primary-foreground shadow hover:bg-primary/90',
+          outline:     'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
+          ghost:       'hover:bg-accent hover:text-accent-foreground',
+          link:        'text-primary underline-offset-4 hover:underline',
+          destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
+        }[variant],
+        { default: 'h-9 px-4 py-2', sm: 'h-8 rounded-md px-3 text-xs', lg: 'h-10 rounded-md px-8', icon: 'h-9 w-9' }[size],
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+Button.displayName = 'Button';
+export { Button };
+`);
+
+  writeFileSync(join(uiDir, 'card.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('rounded-xl border bg-card text-card-foreground shadow', className)} {...props} />
+  ),
+);
+Card.displayName = 'Card';
+
+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
+  ),
+);
+CardHeader.displayName = 'CardHeader';
+
+const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h3 ref={ref} className={cn('font-semibold leading-none tracking-tight', className)} {...props} />
+  ),
+);
+CardTitle.displayName = 'CardTitle';
+
+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  ),
+);
+CardContent.displayName = 'CardContent';
+
+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
+  ),
+);
+CardFooter.displayName = 'CardFooter';
+
+export { Card, CardHeader, CardTitle, CardContent, CardFooter };
+`);
+
+  writeFileSync(join(uiDir, 'badge.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'secondary' | 'outline' | 'destructive';
+}
+
+function Badge({ className, variant = 'default', ...props }: BadgeProps) {
+  return (
+    <div
+      className={cn(
+        'inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors',
+        {
+          default:     'border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80',
+          secondary:   'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
+          outline:     'text-foreground',
+          destructive: 'border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80',
+        }[variant],
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+export { Badge };
+`);
+
+  // Additional UI primitives — no Radix deps, pure HTML + Tailwind
+  writeFileSync(join(uiDir, 'input.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => (
+    <input
+      type={type}
+      className={cn(
+        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+        className,
+      )}
+      ref={ref}
+      {...props}
+    />
+  ),
+);
+Input.displayName = 'Input';
+export { Input };
+`);
+
+  writeFileSync(join(uiDir, 'label.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLLabelElement>>(
+  ({ className, ...props }, ref) => (
+    <label
+      ref={ref}
+      className={cn('text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70', className)}
+      {...props}
+    />
+  ),
+);
+Label.displayName = 'Label';
+export { Label };
+`);
+
+  writeFileSync(join(uiDir, 'textarea.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, ...props }, ref) => (
+    <textarea
+      className={cn(
+        'flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+        className,
+      )}
+      ref={ref}
+      {...props}
+    />
+  ),
+);
+Textarea.displayName = 'Textarea';
+export { Textarea };
+`);
+
+  writeFileSync(join(uiDir, 'separator.tsx'), `import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+const Separator = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { orientation?: 'horizontal' | 'vertical' }>(
+  ({ className, orientation = 'horizontal', ...props }, ref) => (
+    <div
+      ref={ref}
+      role="none"
+      className={cn(
+        'shrink-0 bg-border',
+        orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]',
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+Separator.displayName = 'Separator';
+export { Separator };
+`);
+
+  // Radix-based components — only written when the matching section is used
+  if (usedTypes.includes('FAQ')) writeFileSync(join(uiDir, 'accordion.tsx'), `import * as React from 'react';
+import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const Accordion = AccordionPrimitive.Root;
+
+const AccordionItem = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
+>(({ className, ...props }, ref) => (
+  <AccordionPrimitive.Item ref={ref} className={cn('border-b', className)} {...props} />
+));
+AccordionItem.displayName = 'AccordionItem';
+
+const AccordionTrigger = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Header className="flex">
+    <AccordionPrimitive.Trigger
+      ref={ref}
+      className={cn(
+        'flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+    </AccordionPrimitive.Trigger>
+  </AccordionPrimitive.Header>
+));
+AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
+
+const AccordionContent = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Content
+    ref={ref}
+    className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    {...props}
+  >
+    <div className={cn('pb-4 pt-0', className)}>{children}</div>
+  </AccordionPrimitive.Content>
+));
+AccordionContent.displayName = AccordionPrimitive.Content.displayName;
+
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+`);
+
+  if (usedTypes.includes('NAVBAR')) writeFileSync(join(uiDir, 'sheet.tsx'), `import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const Sheet = DialogPrimitive.Root;
+const SheetTrigger = DialogPrimitive.Trigger;
+const SheetClose = DialogPrimitive.Close;
+const SheetPortal = DialogPrimitive.Portal;
+
+const SheetOverlay = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Overlay>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      className,
+    )}
+    {...props}
+  />
+));
+SheetOverlay.displayName = 'SheetOverlay';
+
+const SheetContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <SheetPortal>
+    <SheetOverlay />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        'fixed inset-y-0 right-0 z-50 h-full w-3/4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </SheetPortal>
+));
+SheetContent.displayName = 'SheetContent';
+
+export { Sheet, SheetClose, SheetContent, SheetTrigger };
+`);
+
+  // components.json
+  const cssPath = framework === 'nextjs' ? 'src/app/globals.css' : 'src/index.css';
+  writeFileSync(join(projectDir, 'components.json'), JSON.stringify({
+    $schema: 'https://ui.shadcn.com/schema.json',
+    style: 'new-york',
+    rsc: false,
+    tsx: true,
+    tailwind: { config: 'tailwind.config.js', css: cssPath, baseColor: 'zinc', cssVariables: true },
+    aliases: { components: '@/components', utils: '@/lib/utils' },
+  }, null, 2));
+
+  // Overwrite tailwind.config.js with shadcn-extended version
+  const content = framework === 'nextjs' ? `'./src/**/*.{js,ts,jsx,tsx,mdx}'` : `'./index.html', './src/**/*.{ts,tsx}'`;
+  const exportStyle = framework === 'nextjs' ? 'module.exports =' : 'export default';
+  writeFileSync(join(projectDir, 'tailwind.config.js'), `/** @type {import('tailwindcss').Config} */
+${exportStyle} {
+  darkMode: ['class'],
+  content: [${content}],
+  theme: {
+    extend: {${SHADCN_TAILWIND_THEME}
+    },
+  },
+  plugins: [require('tailwindcss-animate')],
+};
+`);
+
+  // Append shadcn CSS variables to the CSS entry file
+  const cssFile = framework === 'nextjs'
+    ? join(projectDir, 'src', 'app', 'globals.css')
+    : join(projectDir, 'src', 'index.css');
+  const existing = readFileSync(cssFile, 'utf-8');
+  writeFileSync(cssFile, existing + SHADCN_CSS_VARS);
+}
+
+
+function generateHomeTsx(
   config: ScaffoldConfig,
   usedTypes: string[],
   heroImageUrl?: string,
@@ -117,7 +547,7 @@ const theme: Theme = {
   fontFamily: '${fontFamily}',
 };
 
-export function LandingPage() {
+export function Home() {
   return (
     <main
       className="min-h-screen ${bgClass} ${fontClass}"
@@ -135,7 +565,8 @@ export function scaffoldProject(
   outputDir: string,
   workspaceRoot: string | null,
   heroImageUrl?: string,
-  framework: Framework = 'vite'
+  framework: Framework = 'vite',
+  uiLib: UiLib = 'tailwind'
 ): string {
   const templatesDir = getTemplatesDir(workspaceRoot);
   const projectName  = toKebab(config.metadata.siteName);
@@ -161,17 +592,20 @@ export function scaffoldProject(
     readFileSync(join(templatesDir, 'theme.ts'), 'utf-8')
   );
 
-  // Section components — rewrite './theme.js' → '../theme'
+  // Section components — use shadcn variant when available, otherwise plain
   for (const type of usedTypes) {
-    const { file } = SECTION_MAP[type];
-    const src = readFileSync(join(templatesDir, file), 'utf-8');
-    writeFileSync(join(componentsDir, 'sections', file), rewriteThemeImport(src));
+    const info = SECTION_MAP[type];
+    const isShadcn = uiLib === 'shadcn' && !!info.shadcnFile;
+    const templatePath = isShadcn ? info.shadcnFile! : info.file;
+    const src = readFileSync(join(templatesDir, templatePath), 'utf-8');
+    const rewritten = isShadcn ? rewriteThemeImportFromSubdir(src) : rewriteThemeImport(src);
+    writeFileSync(join(componentsDir, 'sections', info.file), rewritten);
   }
 
-  // LandingPage.tsx
+  // Home.tsx
   writeFileSync(
-    join(componentsDir, 'LandingPage.tsx'),
-    generateLandingPageTsx(config, usedTypes, heroImageUrl, framework)
+    join(componentsDir, 'Home.tsx'),
+    generateHomeTsx(config, usedTypes, heroImageUrl, framework)
   );
 
   if (framework === 'nextjs') {
@@ -200,10 +634,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 `);
 
-    writeFileSync(join(projectDir, 'src', 'app', 'page.tsx'), `import { LandingPage } from '../components/LandingPage';
+    writeFileSync(join(projectDir, 'src', 'app', 'page.tsx'), `import { Home } from '../components/Home';
 
 export default function Page() {
-  return <LandingPage />;
+  return <Home />;
 }
 `);
 
@@ -228,6 +662,13 @@ export default nextConfig;
         next: '^15.0.0',
         react: '^19.0.0',
         'react-dom': '^19.0.0',
+        ...(uiLib === 'shadcn' ? {
+          clsx: '^2.1.0',
+          'tailwind-merge': '^2.3.0',
+          'lucide-react': '^0.400.0',
+          ...(usedTypes.includes('FAQ')    ? { '@radix-ui/react-accordion': '^1.2.0' } : {}),
+          ...(usedTypes.includes('NAVBAR') ? { '@radix-ui/react-dialog':    '^1.1.0' } : {}),
+        } : {}),
       },
       devDependencies: {
         typescript: '^5.4.0',
@@ -237,6 +678,7 @@ export default nextConfig;
         tailwindcss: '^3.4.0',
         autoprefixer: '^10.4.0',
         postcss: '^8.4.0',
+        ...(uiLib === 'shadcn' ? { 'tailwindcss-animate': '^1.0.7' } : {}),
       },
     }, null, 2));
 
@@ -279,12 +721,12 @@ module.exports = {
     // ── Vite scaffold ──────────────────────────────────────────────────────
     writeFileSync(join(projectDir, 'src', 'main.tsx'), `import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { LandingPage } from './LandingPage';
+import { Home } from './Home';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <LandingPage />
+    <Home />
   </React.StrictMode>
 );
 `);
@@ -321,6 +763,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       dependencies: {
         react: '^19.0.0',
         'react-dom': '^19.0.0',
+        ...(uiLib === 'shadcn' ? {
+          clsx: '^2.1.0',
+          'tailwind-merge': '^2.3.0',
+          'lucide-react': '^0.400.0',
+          ...(usedTypes.includes('FAQ')    ? { '@radix-ui/react-accordion': '^1.2.0' } : {}),
+          ...(usedTypes.includes('NAVBAR') ? { '@radix-ui/react-dialog':    '^1.1.0' } : {}),
+        } : {}),
       },
       devDependencies: {
         typescript: '^5.4.0',
@@ -329,6 +778,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         tailwindcss: '^3.4.0',
         autoprefixer: '^10.4.0',
         postcss: '^8.4.0',
+        ...(uiLib === 'shadcn' ? { 'tailwindcss-animate': '^1.0.7' } : {}),
         '@types/react': '^19.0.0',
         '@types/react-dom': '^19.0.0',
       },
@@ -348,11 +798,24 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         noEmit: true,
         jsx: 'react-jsx',
         strict: true,
+        ...(uiLib === 'shadcn' ? { baseUrl: '.', paths: { '@/*': ['./src/*'] } } : {}),
       },
       include: ['src'],
     }, null, 2));
 
-    writeFileSync(join(projectDir, 'vite.config.ts'), `import { defineConfig } from 'vite';
+    writeFileSync(join(projectDir, 'vite.config.ts'), uiLib === 'shadcn'
+      ? `import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: { '@': path.resolve(__dirname, './src') },
+  },
+});
+`
+      : `import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -381,19 +844,24 @@ dist
 .env.local
 `);
 
+  if (uiLib === 'shadcn') {
+    writeShadcnExtras(projectDir, componentsDir, framework, projectName, usedTypes);
+  }
+
   return projectDir;
 }
 
 /**
- * Overwrites src/LandingPage.tsx with a new version that includes the hero
+ * Overwrites src/Home.tsx with a new version that includes the hero
  * image URL. Called after the image has been downloaded and placed in
  * public/images/hero.jpg.
  */
-export function rewriteLandingPage(
+export function rewriteHome(
   projectDir: string,
   config: ScaffoldConfig,
   heroImageUrl: string,
-  framework: Framework = 'vite'
+  framework: Framework = 'vite',
+  _uiLib: UiLib = 'tailwind'
 ): void {
   const usedTypes = [...new Set(config.sections.map((s) => s.type))].filter(
     (t) => t in SECTION_MAP
@@ -402,7 +870,7 @@ export function rewriteLandingPage(
     ? join(projectDir, 'src', 'components')
     : join(projectDir, 'src');
   writeFileSync(
-    join(componentsDir, 'LandingPage.tsx'),
-    generateLandingPageTsx(config, usedTypes, heroImageUrl, framework)
+    join(componentsDir, 'Home.tsx'),
+    generateHomeTsx(config, usedTypes, heroImageUrl, framework)
   );
 }

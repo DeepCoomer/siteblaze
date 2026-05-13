@@ -86,8 +86,24 @@ const TEMPLATE_FILES = [
   'VideoEmbed.tsx',
 ];
 
+const SHADCN_SECTION_FILES = [
+  'Hero.tsx',
+  'CTASection.tsx',
+  'Navbar.tsx',
+  'Newsletter.tsx',
+  'ContactForm.tsx',
+  'Features.tsx',
+  'Pricing.tsx',
+  'Testimonials.tsx',
+  'Skills.tsx',
+  'PortfolioGrid.tsx',
+  'ProductGrid.tsx',
+  'FAQ.tsx',
+];
+
 if (existsSync(templateDest)) rmSync(templateDest, { recursive: true });
 mkdirSync(templateDest, { recursive: true });
+mkdirSync(join(templateDest, 'shadcn'), { recursive: true });
 
 for (const file of TEMPLATE_FILES) {
   const src = join(templateSrc, file);
@@ -98,6 +114,15 @@ for (const file of TEMPLATE_FILES) {
   cpSync(src, join(templateDest, file));
 }
 
+for (const file of SHADCN_SECTION_FILES) {
+  const src = join(templateSrc, 'shadcn', file);
+  if (!existsSync(src)) {
+    console.error(`\nShadcn template file not found: ${src}\n`);
+    process.exit(1);
+  }
+  cpSync(src, join(templateDest, 'shadcn', file));
+}
+
 console.log(`\n✓  CLI bundled     → dist/index.js`);
 console.log(`✓  Web app copied  → web/`);
-console.log(`✓  Templates copied → templates/  (${TEMPLATE_FILES.length} files)\n`);
+console.log(`✓  Templates copied → templates/  (${TEMPLATE_FILES.length} plain + ${SHADCN_SECTION_FILES.length} shadcn)\n`);

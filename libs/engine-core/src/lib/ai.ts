@@ -58,6 +58,7 @@ Core rules:
 - Always include NAVBAR first and CTA last. Build 6–10 sections total.
 - For each section choose the most appropriate variant.
 - className and styleOverrides are optional; omit them unless needed.
+- For grid/card sections, generate enough items to fill the layout: TESTIMONIALS ≥ 3 items, PRICING exactly 3 tiers (e.g. Free / Pro / Enterprise), FEATURES ≥ 3 items, TEAM ≥ 3 members, STATS ≥ 4 items, LOGO_CLOUD ≥ 5 items, SKILLS ≥ 6 items, PORTFOLIO_GRID ≥ 4 items, PRODUCT_GRID ≥ 4 items, FAQ ≥ 5 items.
 
 Site category → section selection guide:
   landing   → HERO, FEATURES, STATS, TESTIMONIALS, PRICING, FAQ, NEWSLETTER, CTA
@@ -128,7 +129,11 @@ Full schema (use exact field names and types):
       "type": "FEATURES", "variant": "cards",
       "content": {
         "title": "optional string",
-        "items": [{ "icon": "emoji", "title": "string", "description": "string" }]
+        "items": [
+          { "icon": "emoji", "title": "string", "description": "string" },
+          { "icon": "emoji", "title": "string", "description": "string" },
+          { "icon": "emoji", "title": "string", "description": "string" }
+        ]
       }
     },
     {
@@ -140,13 +145,21 @@ Full schema (use exact field names and types):
     },
     {
       "type": "TESTIMONIALS", "variant": "grid",
-      "content": { "title": "optional string", "items": [{"quote":"string","author":"string","role":"optional string"}] }
+      "content": { "title": "optional string", "items": [
+        {"quote":"string","author":"string","role":"optional string"},
+        {"quote":"string","author":"string","role":"optional string"},
+        {"quote":"string","author":"string","role":"optional string"}
+      ]}
     },
     {
       "type": "PRICING", "variant": "cards",
       "content": {
         "title": "optional string",
-        "tiers": [{"name":"string","price":"string","description":"optional string","features":["string"],"ctaText":"string","highlighted":false}]
+        "tiers": [
+          {"name":"Free","price":"$0/mo","description":"optional string","features":["string","string"],"ctaText":"Get started","highlighted":false},
+          {"name":"Pro","price":"$X/mo","description":"optional string","features":["string","string","string"],"ctaText":"Upgrade","highlighted":true},
+          {"name":"Enterprise","price":"$XX/mo","description":"optional string","features":["string","string","string","string"],"ctaText":"Contact us","highlighted":false}
+        ]
       }
     },
     {
@@ -236,17 +249,17 @@ type Message = { role: Role; content: string };
 export type SiteType = 'landing' | 'portfolio' | 'agency' | 'saas' | 'blog' | 'ecommerce' | 'event';
 
 const SITE_TYPE_KEYWORDS: Record<SiteType, string[]> = {
-  portfolio:  ['portfolio', 'resume', 'cv', 'freelance', 'my work', 'case studies'],
-  agency:     ['agency', 'design firm', 'consultancy', 'branding agency', 'marketing agency', 'creative agency'],
-  saas:       ['saas', 'software', 'dashboard', 'productivity tool', 'startup'],
-  blog:       ['blog', 'magazine', 'publication', 'articles', 'content site'],
-  ecommerce:  ['shop', 'store', 'ecommerce', 'e-commerce', 'retail', 'fashion', 'clothing', 'merch', 'marketplace'],
-  event:      ['conference', 'summit', 'meetup', 'webinar', 'hackathon', 'expo', 'convention', 'festival'],
+  portfolio:  ['portfolio', 'resume', 'cv', 'freelance', 'my work', 'case studies', 'my projects', 'personal site', 'personal brand', 'showcase'],
+  agency:     ['agency', 'design firm', 'consultancy', 'branding agency', 'marketing agency', 'creative agency', 'digital agency', 'web agency', 'creative firm'],
+  saas:       ['saas', 'b2b', 'software', 'dashboard', 'productivity tool', 'startup', 'project management', 'team collaboration', 'workflow', 'crm', 'devops', 'automation'],
+  blog:       ['blog', 'magazine', 'publication', 'articles', 'content site', 'newsletter'],
+  ecommerce:  ['shop', 'store', 'ecommerce', 'e-commerce', 'retail', 'fashion', 'clothing', 'merch', 'marketplace', 'buy', 'sell', 'checkout', 'online store'],
+  event:      ['conference', 'summit', 'meetup', 'webinar', 'hackathon', 'expo', 'convention', 'festival', 'ticket', 'concert'],
   landing:    [],
 };
 
-// Extended keyword map for domains not covered by the main SiteType enum.
-// These pass a free-form category hint to the AI rather than a schema enum value.
+// Extended keyword map for niche domains NOT covered by the SiteType enum.
+// SITE_TYPE_KEYWORDS is checked first — these only run when that returns 'landing'.
 const EXTENDED_CATEGORIES: Array<{ keywords: string[]; label: string }> = [
   { keywords: ['restaurant', 'cafe', 'coffee', 'bistro', 'diner', 'bar', 'pub', 'food', 'dining', 'menu', 'kitchen', 'bakery', 'pizza', 'sushi', 'burger'], label: 'restaurant' },
   { keywords: ['real estate', 'property', 'homes', 'realty', 'housing', 'apartments', 'listings', 'mortgage', 'realtor'], label: 'real estate' },
@@ -255,19 +268,15 @@ const EXTENDED_CATEGORIES: Array<{ keywords: string[]; label: string }> = [
   { keywords: ['hotel', 'resort', 'hostel', 'accommodation', 'lodge', 'inn', 'vacation rental', 'airbnb'], label: 'hospitality' },
   { keywords: ['clinic', 'hospital', 'doctor', 'dentist', 'medical', 'healthcare', 'therapy', 'mental health', 'pharmacy', 'health center'], label: 'healthcare' },
   { keywords: ['school', 'university', 'course', 'tutoring', 'education', 'learning', 'training', 'academy', 'e-learning', 'coaching'], label: 'education' },
-  { keywords: ['law', 'legal', 'attorney', 'lawyer', 'solicitor', 'firm', 'counsel'], label: 'legal services' },
+  { keywords: ['law', 'legal', 'attorney', 'lawyer', 'solicitor', 'counsel'], label: 'legal services' },
   { keywords: ['church', 'nonprofit', 'charity', 'foundation', 'volunteer', 'donation', 'ngo'], label: 'nonprofit' },
   { keywords: ['construction', 'contractor', 'builder', 'architecture', 'renovation', 'remodel', 'plumber', 'electrician'], label: 'construction & trades' },
-  { keywords: ['wedding', 'catering', 'venue', 'event planning', 'florist', 'photography'], label: 'wedding & events' },
+  { keywords: ['wedding', 'catering', 'venue', 'event planning', 'florist'], label: 'wedding & events' },
   { keywords: ['travel', 'tourism', 'tour', 'vacation', 'destination', 'cruise', 'adventure'], label: 'travel & tourism' },
   { keywords: ['music', 'band', 'musician', 'album', 'record', 'dj', 'producer'], label: 'music & entertainment' },
-  { keywords: ['podcast', 'creator', 'influencer', 'youtube', 'streaming', 'content creator'], label: 'content creator' },
-  { keywords: ['product', 'buy', 'sell', 'order', 'delivery'], label: 'ecommerce' },
-  { keywords: ['concert', 'workshop', 'event', 'meetup', 'ticket', 'speaker', 'venue schedule'], label: 'event' },
-  { keywords: ['developer', 'programmer', 'engineer', 'designer', 'photographer', 'artist', 'freelancer', 'personal site'], label: 'portfolio' },
-  { keywords: ['saas', 'software', 'app', 'platform', 'tool', 'startup', 'dashboard'], label: 'saas' },
-  { keywords: ['blog', 'newsletter', 'magazine', 'articles', 'publication'], label: 'blog' },
-  { keywords: ['agency', 'studio', 'branding', 'creative firm', 'consultancy'], label: 'agency' },
+  { keywords: ['podcast', 'influencer', 'youtube', 'streaming', 'content creator'], label: 'content creator' },
+  // Single-word personal-brand signals too ambiguous for SITE_TYPE_KEYWORDS
+  { keywords: ['photographer', 'illustrator', 'artist', 'developer portfolio', 'design portfolio'], label: 'portfolio' },
 ];
 
 const SKIP_WORDS = new Set([
@@ -288,22 +297,19 @@ export function inferSiteType(prompt: string): SiteType {
 
 /**
  * Returns the best human-readable category for a prompt.
- * Checks specific extended categories first (restaurant, real estate, etc.),
- * then falls back to known SiteType enum names, then extracts a best-effort
- * keyword from the prompt so the AI always gets useful context.
+ * Priority: SiteType enum keywords → extended niche domains → best-effort word extraction.
  */
 export function extractCategoryHint(prompt: string): string {
   const lower = prompt.toLowerCase();
 
-  // Extended (specific) categories checked first — prevents overly-broad enum
-  // keywords like "studio" or "platform" from winning over "yoga studio" / "course platform"
+  // 1. Structured SiteType keywords first — enum-backed, highest precision
+  const known = inferSiteType(prompt);
+  if (known !== 'landing') return known;
+
+  // 2. Niche domains not covered by the SiteType enum (restaurant, healthcare, etc.)
   for (const { keywords, label } of EXTENDED_CATEGORIES) {
     if (keywords.some(kw => lower.includes(kw))) return label;
   }
-
-  // Fall back to known SiteType enum values
-  const known = inferSiteType(prompt);
-  if (known !== 'landing') return known;
 
   // Best-effort: pick the first two meaningful words from the prompt
   const words = lower

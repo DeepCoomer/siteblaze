@@ -24,9 +24,9 @@ Tools like v0, Bolt, and Lovable are browser-based platforms. snapsite is a deve
 ## Install
 
 ```bash
-npm install -g snapsite
+npm install -g @deepcoomer/snapsite
 # or run without installing:
-npx snapsite generate "your prompt"
+npx @deepcoomer/snapsite generate "your prompt"
 ```
 
 Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/keys).

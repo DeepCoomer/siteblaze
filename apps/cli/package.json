@@ -1,5 +1,5 @@
 {
-  "name": "snapsite",
+  "name": "@deepcoomer/snapsite",
   "version": "0.1.0",
   "description": "AI-powered site generator — scaffold production-ready React projects from a text prompt",
   "type": "module",

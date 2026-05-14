@@ -324,7 +324,9 @@ program
         console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
       } else {
         const src = process.env['SNAPSITE_MODELS'] ? 'SNAPSITE_MODELS env' : loadSavedModelsInfo() ? 'saved config' : 'defaults';
-        console.log(`\x1b[2mRacing ${raceModels.length} models (${src}) — first valid response wins\x1b[0m\n`);
+        const verb = raceModels.length === 1 ? 'Using' : 'Racing';
+        const tail = raceModels.length === 1 ? '' : ' — first valid response wins';
+        console.log(`\x1b[2m${verb} ${raceModels.length} model${raceModels.length === 1 ? '' : 's'} (${src})${tail}\x1b[0m\n`);
       }
     }
 
@@ -390,7 +392,7 @@ program
     if (!opts.yes) {
       const rl = createInterface({ input: process.stdin, output: process.stdout });
       const raw = await new Promise<string>(res => rl.question(
-        `  Project folder: \x1b[36m${aiSlug}\x1b[0m  \x1b[2m(Enter to confirm or type a name)\x1b[0m  `,
+        `  App name: \x1b[36m${aiSlug}\x1b[0m  \x1b[2m(sets folder + package.json name — Enter to confirm)\x1b[0m  `,
         res
       ));
       rl.close();

@@ -63,7 +63,7 @@ siteblaze list-models --refresh
 | `-m, --model <id>` | Force a specific OpenRouter model |
 | `-o, --output <path>` | Output directory (default: current dir) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
-| `-f, --framework <fw>` | `vite` (default) or `nextjs` |
+| `-f, --framework <fw>` | `vite` (default) or `next` / `nextjs` |
 | `--theme <mode>` | `light` `dark` `midnight` |
 | `--ui <lib>` | `tailwind` (default) or `shadcn` |
 | `--no-image` | Skip AI hero image generation |

@@ -238,7 +238,8 @@ async function confirmTheme(explicit?: string): Promise<ThemeOverride | undefine
 // ---------------------------------------------------------------------------
 
 async function confirmFramework(explicit?: string): Promise<Framework> {
-  if (explicit === 'nextjs' || explicit === 'vite') return explicit;
+  if (explicit === 'nextjs' || explicit === 'next') return 'nextjs';
+  if (explicit === 'vite') return explicit;
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
@@ -339,9 +340,9 @@ program
       ? detectedCategory
       : await confirmSiteType(detectedCategory);
 
-    const framework   = opts.yes ? 'vite'     : await confirmFramework(opts.framework);
-    const uiLib       = opts.yes ? 'tailwind'  : await confirmUiLib(opts.ui);
-    const themeMode   = opts.yes ? undefined   : await confirmTheme(opts.theme);
+    const framework   = opts.framework ? await confirmFramework(opts.framework) : opts.yes ? 'vite'    : await confirmFramework();
+    const uiLib       = opts.ui        ? await confirmUiLib(opts.ui)           : opts.yes ? 'tailwind' : await confirmUiLib();
+    const themeMode   = opts.theme     ? await confirmTheme(opts.theme)        : opts.yes ? undefined  : await confirmTheme();
     const pkgManager  = opts.yes ? detectPackageManager(process.cwd()) : await confirmPackageManager(process.cwd());
 
     // Refine terse prompts before generation — skipped for detailed prompts (>=12 words)
@@ -356,7 +357,7 @@ program
       );
     }
 
-    const spinner = startSpinner('Generating your landing page');
+    const spinner = startSpinner('Generating your site');
 
     // Run AI + image generation truly in parallel
     // Image gen uses raw prompt (concrete nouns work better for visual models)
@@ -383,7 +384,7 @@ program
     }
 
     const modelLabel = opts.verbose ? `  \x1b[2m${aiResult.model}\x1b[0m` : '';
-    spinner.stop(`\x1b[32m✓\x1b[0m  Landing page generated${modelLabel}`);
+    spinner.stop(`\x1b[32m✓\x1b[0m  Site generated${modelLabel}`);
 
     if (aiResult.deprecatedModels?.length) {
       console.log(`\x1b[33m⚠  ${aiResult.deprecatedModels.length} model${aiResult.deprecatedModels.length === 1 ? '' : 's'} appear deprecated: ${aiResult.deprecatedModels.join(', ')}\x1b[0m`);

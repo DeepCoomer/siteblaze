@@ -49,8 +49,8 @@ async function testModel(model) {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://snapsite.dev',
-        'X-Title': 'Snapsite Debug',
+        'HTTP-Referer': 'https://siteblaze.dev',
+        'X-Title': 'Siteblaze Debug',
       },
       body: JSON.stringify({
         model,

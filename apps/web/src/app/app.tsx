@@ -8,7 +8,7 @@ const API_URL = import.meta.env.DEV ? 'http://localhost:3000/config' : '/config'
 type ThemeMode = 'light' | 'dark' | 'midnight';
 const THEMES: ThemeMode[] = ['light', 'dark', 'midnight'];
 const THEME_ICON: Record<ThemeMode, string> = { light: '☀️', dark: '🌙', midnight: '✦' };
-const STORAGE_KEY = 'snapsite:theme';
+const STORAGE_KEY = 'siteblaze:theme';
 
 type FetchState =
   | { status: 'loading' }
@@ -257,7 +257,7 @@ export function App() {
           <p className="mt-2 text-xs opacity-75">{state.message}</p>
           <p className="mt-4 text-xs text-gray-500">
             Start the full stack with{' '}
-            <code className="font-mono rounded bg-gray-100 px-1 py-0.5">snapsite preview</code>
+            <code className="font-mono rounded bg-gray-100 px-1 py-0.5">siteblaze preview</code>
           </p>
         </div>
       </div>

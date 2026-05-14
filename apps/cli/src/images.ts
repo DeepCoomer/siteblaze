@@ -42,7 +42,7 @@ async function downloadImage(prompt: string, destPath: string): Promise<boolean>
  * Always resolves — never throws.
  */
 export async function generateHeroImage(rawPrompt: string): Promise<string | null> {
-  const tmpPath = join(tmpdir(), `snapsite-hero-${Date.now()}.jpg`);
+  const tmpPath = join(tmpdir(), `siteblaze-hero-${Date.now()}.jpg`);
   const ok = await downloadImage(buildImagePrompt(rawPrompt), tmpPath);
   return ok ? tmpPath : null;
 }

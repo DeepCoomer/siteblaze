@@ -1,10 +1,10 @@
 {
-  "name": "@deepcoomer/snapsite",
+  "name": "@deepcoomer/siteblaze",
   "version": "0.1.0",
   "description": "AI-powered site generator — scaffold production-ready React projects from a text prompt",
   "type": "module",
   "bin": {
-    "snapsite": "dist/index.js"
+    "siteblaze": "dist/index.js"
   },
   "files": [
     "dist",
@@ -31,9 +31,9 @@
   "author": "deepcoomer",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DeepCoomer/snapsite.git"
+    "url": "git+https://github.com/DeepCoomer/siteblaze.git"
   },
-  "homepage": "https://github.com/DeepCoomer/snapsite#readme",
+  "homepage": "https://github.com/DeepCoomer/siteblaze#readme",
   "dependencies": {
     "commander": "^12.0.0",
     "concurrently": "*",

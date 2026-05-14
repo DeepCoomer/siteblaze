@@ -3,7 +3,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { FREE_MODELS } from '@org/engine-core';
 
-const CONFIG_DIR  = join(homedir(), '.config', 'snapsite');
+const CONFIG_DIR  = join(homedir(), '.config', 'siteblaze');
 const MODELS_FILE = join(CONFIG_DIR, 'models.json');
 
 interface ModelsConfig {
@@ -13,12 +13,12 @@ interface ModelsConfig {
 
 /**
  * Resolves the model list for racing in priority order:
- *   1. SNAPSITE_MODELS env var  (comma-separated)
- *   2. ~/.config/snapsite/models.json  (written by `list-models --refresh`)
+ *   1. SITEBLAZE_MODELS env var  (comma-separated)
+ *   2. ~/.config/siteblaze/models.json  (written by `list-models --refresh`)
  *   3. Hardcoded FREE_MODELS defaults
  */
 export function resolveRaceModels(): string[] {
-  const fromEnv = process.env['SNAPSITE_MODELS'];
+  const fromEnv = process.env['SITEBLAZE_MODELS'];
   if (fromEnv?.trim()) {
     return fromEnv.split(',').map(m => m.trim()).filter(Boolean);
   }
@@ -56,7 +56,7 @@ export async function fetchFreeModels(apiKey: string): Promise<string[]> {
   const res = await fetch('https://openrouter.ai/api/v1/models', {
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://snapsite.dev',
+      'HTTP-Referer': 'https://siteblaze.dev',
     },
     signal: AbortSignal.timeout(15_000),
   });

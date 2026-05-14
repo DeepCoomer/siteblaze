@@ -156,7 +156,7 @@ function printBanner() {
     '',
     `  \x1b[35m╭──────────────────────────────────────╮\x1b[0m`,
     `  \x1b[35m│\x1b[0m                                      \x1b[35m│\x1b[0m`,
-    `  \x1b[35m│\x1b[0m   \x1b[1m\x1b[35m◆\x1b[0m  \x1b[1msnapsite\x1b[0m  \x1b[2mv${CLI_VERSION}\x1b[0m                \x1b[35m│\x1b[0m`,
+    `  \x1b[35m│\x1b[0m   \x1b[1m\x1b[35m◆\x1b[0m  \x1b[1msiteblaze\x1b[0m  \x1b[2mv${CLI_VERSION}\x1b[0m                \x1b[35m│\x1b[0m`,
     `  \x1b[35m│\x1b[0m      \x1b[2mGenerate · Scaffold · Ship\x1b[0m       \x1b[35m│\x1b[0m`,
     `  \x1b[35m│\x1b[0m                                      \x1b[35m│\x1b[0m`,
     `  \x1b[35m╰──────────────────────────────────────╯\x1b[0m`,
@@ -274,7 +274,7 @@ async function confirmUiLib(explicit?: string): Promise<UiLib> {
 const program = new Command();
 
 program
-  .name('snapsite')
+  .name('siteblaze')
   .description('AI-powered site generator — from prompt to production-ready React project')
   .version(CLI_VERSION)
   .hook('preAction', printBanner);
@@ -323,7 +323,7 @@ program
       if (opts.model) {
         console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
       } else {
-        const src = process.env['SNAPSITE_MODELS'] ? 'SNAPSITE_MODELS env' : loadSavedModelsInfo() ? 'saved config' : 'defaults';
+        const src = process.env['SITEBLAZE_MODELS'] ? 'SITEBLAZE_MODELS env' : loadSavedModelsInfo() ? 'saved config' : 'defaults';
         const verb = raceModels.length === 1 ? 'Using' : 'Racing';
         const tail = raceModels.length === 1 ? '' : ' — first valid response wins';
         console.log(`\x1b[2m${verb} ${raceModels.length} model${raceModels.length === 1 ? '' : 's'} (${src})${tail}\x1b[0m\n`);
@@ -372,7 +372,7 @@ program
       spinner.stop('\x1b[31m✗\x1b[0m  Generation failed');
       const msg = String(err);
       if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
-        console.error('\n  Invalid API key. Run \x1b[36msnapsite auth\x1b[0m to update it.\n');
+        console.error('\n  Invalid API key. Run \x1b[36msiteblaze auth\x1b[0m to update it.\n');
       } else if (msg.includes('All models failed') || msg.includes('aborted')) {
         console.error('\n  All AI models failed to respond. Check your connection or try again.');
         console.error('  Use \x1b[36m--model <id>\x1b[0m to target a specific model.\n');
@@ -523,7 +523,7 @@ program
         process.exit(1);
       }
       saveModels(fetched);
-      console.log(`  \x1b[32m✓\x1b[0m  Saved ${fetched.length} free models to \x1b[2m~/.config/snapsite/models.json\x1b[0m`);
+      console.log(`  \x1b[32m✓\x1b[0m  Saved ${fetched.length} free models to \x1b[2m~/.config/siteblaze/models.json\x1b[0m`);
       console.log(`  \x1b[2mThese will be used for all future generation races.\x1b[0m\n`);
       fetched.slice(0, 20).forEach((id, i) => {
         const num = `\x1b[2m${String(i + 1).padStart(2)}.\x1b[0m`;
@@ -532,14 +532,14 @@ program
       if (fetched.length > 20) {
         console.log(`  \x1b[2m  … and ${fetched.length - 20} more\x1b[0m`);
       }
-      console.log(`\n  Set \x1b[33mSNAPSITE_MODELS=model1,model2\x1b[0m to use specific models only.\n`);
+      console.log(`\n  Set \x1b[33mSITEBLAZE_MODELS=model1,model2\x1b[0m to use specific models only.\n`);
       return;
     }
 
     const active = resolveRaceModels();
     const savedInfo = loadSavedModelsInfo();
-    const source = process.env['SNAPSITE_MODELS']
-      ? '\x1b[33mSNAPSITE_MODELS\x1b[0m env var'
+    const source = process.env['SITEBLAZE_MODELS']
+      ? '\x1b[33mSITEBLAZE_MODELS\x1b[0m env var'
       : savedInfo
         ? `\x1b[2msaved config (${savedInfo.updatedAt.slice(0, 10)})\x1b[0m`
         : '\x1b[2mbuilt-in defaults\x1b[0m';
@@ -550,8 +550,8 @@ program
       const num = `\x1b[2m${String(i + 1).padStart(2)}.\x1b[0m`;
       console.log(`  ${num}  \x1b[36m${id.padEnd(52)}\x1b[0m \x1b[2m${note}\x1b[0m`);
     });
-    console.log(`\n  \x1b[2mRun \x1b[0msnapsite list-models --refresh\x1b[2m to fetch the latest free models from OpenRouter.\x1b[0m`);
-    console.log(`  \x1b[2mSet \x1b[0mSNAPSITE_MODELS=model1,model2\x1b[2m to use specific models (e.g. paid ones).\x1b[0m`);
+    console.log(`\n  \x1b[2mRun \x1b[0msiteblaze list-models --refresh\x1b[2m to fetch the latest free models from OpenRouter.\x1b[0m`);
+    console.log(`  \x1b[2mSet \x1b[0mSITEBLAZE_MODELS=model1,model2\x1b[2m to use specific models (e.g. paid ones).\x1b[0m`);
     console.log(`  Use \x1b[33m--model <id>\x1b[0m to target a single model for one generation.\n`);
   });
 

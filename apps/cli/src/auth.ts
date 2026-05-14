@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const CONFIG_DIR  = join(homedir(), '.config', 'snapsite');
+const CONFIG_DIR  = join(homedir(), '.config', 'siteblaze');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ async function validateApiKey(key: string): Promise<boolean> {
 /**
  * Resolves the OpenRouter API key in priority order:
  *   1. Environment variable / project .env  (already extracted by caller)
- *   2. ~/.config/snapsite/config.json
+ *   2. ~/.config/siteblaze/config.json
  *   3. Interactive prompt — offers to save for future runs
  */
 export async function resolveApiKey(fromEnv: string | undefined): Promise<string> {
@@ -86,7 +86,7 @@ export async function resolveApiKey(fromEnv: string | undefined): Promise<string
     process.exit(1);
   }
 
-  const answer = await promptLine('  Save to ~/.config/snapsite/ for future runs? [Y/n] ');
+  const answer = await promptLine('  Save to ~/.config/siteblaze/ for future runs? [Y/n] ');
   if (answer.toLowerCase() !== 'n') {
     saveKey(key);
     console.log('  \x1b[32m✓\x1b[0m  Key saved.\n');
@@ -98,7 +98,7 @@ export async function resolveApiKey(fromEnv: string | undefined): Promise<string
 }
 
 /**
- * `snapsite auth` — set or replace the saved API key.
+ * `siteblaze auth` — set or replace the saved API key.
  */
 export async function configureAuth(): Promise<void> {
   const existing = loadSavedKey();

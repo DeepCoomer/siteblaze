@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build script for the snapsite CLI package.
+ * Build script for the siteblaze CLI package.
  *
  * Steps:
  *  1. Bundle CLI TypeScript → dist/index.js  (esbuild)

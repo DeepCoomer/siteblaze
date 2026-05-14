@@ -126,7 +126,7 @@ export function runEmbeddedPreview(cwd: string): void {
 
   // No config.json in cwd — use a temp dir so we never write into a shared
   // location (npm cache, system dirs) when invoked via npx.
-  const tmpDir = join(tmpdir(), `snapsite-${randomBytes(4).toString('hex')}`);
+  const tmpDir = join(tmpdir(), `siteblaze-${randomBytes(4).toString('hex')}`);
   mkdirSync(tmpDir, { recursive: true });
   const tmpConfigPath = join(tmpDir, 'config.json');
   writeFileSync(tmpConfigPath, JSON.stringify(defaultConfig, null, 2));

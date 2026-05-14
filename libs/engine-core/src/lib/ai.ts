@@ -384,8 +384,8 @@ async function callModel(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://snapsite.dev',
-        'X-Title': 'Snapsite CLI',
+        'HTTP-Referer': 'https://siteblaze.dev',
+        'X-Title': 'Siteblaze CLI',
       },
       body: JSON.stringify({ model, messages, temperature: 0.7 }),
       signal,

@@ -1,18 +1,18 @@
-# snapsite
+# siteblaze
 
 **AI-powered site generator — from prompt to production-ready React project in seconds.**
 
 ```bash
-npx snapsite generate "Syncly — a SaaS project tracker for remote teams"
+npx siteblaze generate "Syncly — a SaaS project tracker for remote teams"
 ```
 
 No browser. No subscription. No blank canvas. Just a complete, runnable React + Tailwind project you own.
 
 ---
 
-## Why snapsite?
+## Why siteblaze?
 
-Tools like v0, Bolt, and Lovable are browser-based platforms. snapsite is a developer CLI that runs in your terminal:
+Tools like v0, Bolt, and Lovable are browser-based platforms. siteblaze is a developer CLI that runs in your terminal:
 
 - **One command** → fully scaffolded React project with real content and appropriate sections
 - **Free tier** — races multiple OpenRouter free models in parallel; first valid response wins
@@ -24,9 +24,9 @@ Tools like v0, Bolt, and Lovable are browser-based platforms. snapsite is a deve
 ## Install
 
 ```bash
-npm install -g @deepcoomer/snapsite
+npm install -g @deepcoomer/siteblaze
 # or run without installing:
-npx @deepcoomer/snapsite generate "your prompt"
+npx @deepcoomer/siteblaze generate "your prompt"
 ```
 
 Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/keys).
@@ -37,23 +37,23 @@ Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/ke
 
 ```bash
 # Generate a project (prompts for framework, UI library, package manager)
-snapsite generate "Vault — a fintech app for wealth management"
+siteblaze generate "Vault — a fintech app for wealth management"
 
 # Skip all prompts with sensible defaults
-snapsite generate "Orbit — SaaS project tracker" --yes
+siteblaze generate "Orbit — SaaS project tracker" --yes
 
 # Next.js + shadcn/ui, no hero image
-snapsite generate "Alex Rivera — freelance designer portfolio" --framework next --ui shadcn --no-image
+siteblaze generate "Alex Rivera — freelance designer portfolio" --framework next --ui shadcn --no-image
 
 # Use your own paid OpenRouter model
-SNAPSITE_MODELS=anthropic/claude-opus-4 snapsite generate "..."
+SITEBLAZE_MODELS=anthropic/claude-opus-4 siteblaze generate "..."
 
 # Save API key for future runs
-snapsite auth
+siteblaze auth
 
 # See active models / refresh from OpenRouter
-snapsite list-models
-snapsite list-models --refresh
+siteblaze list-models
+siteblaze list-models --refresh
 ```
 
 ### Flags
@@ -108,17 +108,17 @@ Each section has 3 layout variants and is fully theme-reactive.
 
 ## Model configuration
 
-By default snapsite races a curated list of free OpenRouter models — first valid response wins.
+By default siteblaze races a curated list of free OpenRouter models — first valid response wins.
 
 ```bash
 # Refresh the model list from OpenRouter (fixes deprecated models)
-snapsite list-models --refresh
+siteblaze list-models --refresh
 
 # Use specific models (comma-separated)
-SNAPSITE_MODELS=openai/gpt-4o,anthropic/claude-opus-4 snapsite generate "..."
+SITEBLAZE_MODELS=openai/gpt-4o,anthropic/claude-opus-4 siteblaze generate "..."
 ```
 
-Precedence: `SNAPSITE_MODELS` env → `~/.config/snapsite/models.json` → built-in defaults.
+Precedence: `SITEBLAZE_MODELS` env → `~/.config/siteblaze/models.json` → built-in defaults.
 
 ---
 

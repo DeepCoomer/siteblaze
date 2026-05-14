@@ -336,8 +336,13 @@ export type ThemeOverride = 'light' | 'dark' | 'midnight';
 
 export interface GenerateOptions {
   apiKey: string;
-  /** Force a specific model. Omit to race all FREE_MODELS. */
+  /** Force a specific model. Omit to race all free models. */
   model?: string;
+  /**
+   * Override the list of models to race. Takes precedence over FREE_MODELS.
+   * Ignored when `model` is set (single-model path).
+   */
+  models?: readonly string[];
   /**
    * Category hint passed to the AI — can be a known SiteType enum value or a
    * free-form label like "restaurant" or "real estate". Always injected as a
@@ -555,7 +560,7 @@ export async function refinePrompt(
 
 export async function generateLandingPage(
   userPrompt: string,
-  { apiKey, model, siteType, themeMode }: GenerateOptions,
+  { apiKey, model, models, siteType, themeMode }: GenerateOptions,
 ): Promise<GenerateResult> {
   const prefixes: string[] = [];
   if (siteType) prefixes.push(`Site category: ${siteType}`);
@@ -566,5 +571,5 @@ export async function generateLandingPage(
   if (model) {
     return generateSingle(prompt, apiKey, model);
   }
-  return generateRace(prompt, apiKey, FREE_MODELS);
+  return generateRace(prompt, apiKey, models ?? FREE_MODELS);
 }

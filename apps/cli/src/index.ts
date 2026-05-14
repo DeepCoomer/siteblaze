@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { createInterface } from 'readline';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -10,6 +11,7 @@ import { eject } from './eject.js';
 import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { generateHeroImage } from './images.js';
+import { resolveRaceModels, saveModels, loadSavedModelsInfo, fetchFreeModels } from './models.js';
 import { generateLandingPage, refinePrompt, FREE_MODELS, MODEL_NOTES, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
 import { isPublishedMode } from './server.js';
 
@@ -315,11 +317,14 @@ program
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
 
+    const raceModels = resolveRaceModels();
+
     if (opts.verbose) {
       if (opts.model) {
         console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
       } else {
-        console.log(`\x1b[2mRacing ${FREE_MODELS.length} free models — first valid response wins\x1b[0m\n`);
+        const src = process.env['SNAPSITE_MODELS'] ? 'SNAPSITE_MODELS env' : loadSavedModelsInfo() ? 'saved config' : 'defaults';
+        console.log(`\x1b[2mRacing ${raceModels.length} models (${src}) — first valid response wins\x1b[0m\n`);
       }
     }
 
@@ -359,7 +364,7 @@ program
     try {
       [tmpImagePath, aiResult] = await Promise.all([
         opts.image ? generateHeroImage(prompt) : Promise.resolve(null),
-        generateLandingPage(refinedPrompt, { apiKey, model: opts.model, siteType, themeMode }),
+        generateLandingPage(refinedPrompt, { apiKey, model: opts.model, models: raceModels, siteType, themeMode }),
       ]);
     } catch (err) {
       spinner.stop('\x1b[31m✗\x1b[0m  Generation failed');
@@ -472,22 +477,80 @@ program
       console.log(`  \x1b[2mAdd more: npx shadcn@latest add <component>\x1b[0m`);
     }
     console.log(`\n  Then edit \x1b[33m${editPath}\x1b[0m to customise your page.\n`);
+
+    // Git init
+    let initGit = opts.yes;
+    if (!opts.yes) {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise<string>(res => rl.question(
+        `  Initialise a git repository? \x1b[2m[Y/n]\x1b[0m  `, res
+      ));
+      rl.close();
+      console.log();
+      initGit = answer.trim().toLowerCase() !== 'n';
+    }
+    if (initGit) {
+      try {
+        execSync('git init', { cwd: finalProjectDir, stdio: 'ignore' });
+        execSync('git add .', { cwd: finalProjectDir, stdio: 'ignore' });
+        execSync('git commit -m "Initial commit"', { cwd: finalProjectDir, stdio: 'ignore' });
+        console.log(`  \x1b[32m✓\x1b[0m  Git repository initialised\n`);
+      } catch {
+        console.log(`  \x1b[2m~\x1b[0m  Git init skipped (git not available or not configured)\n`);
+      }
+    }
   });
 
 // ── list-models ───────────────────────────────────────────────────────────────
 
 program
   .command('list-models')
-  .description('List all free models used in generation races')
-  .action(() => {
-    console.log('\n  \x1b[1mFree models\x1b[0m  \x1b[2m(raced in this order — first valid response wins)\x1b[0m\n');
-    FREE_MODELS.forEach((id, i) => {
+  .description('List models used for generation — use --refresh to fetch latest from OpenRouter')
+  .option('--refresh', 'Fetch current free models from OpenRouter and save for future runs')
+  .action(async (opts: { refresh?: boolean }) => {
+    if (opts.refresh) {
+      const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
+      process.stdout.write('  Fetching models from OpenRouter…');
+      let fetched: string[];
+      try {
+        fetched = await fetchFreeModels(apiKey);
+        process.stdout.write('\r\x1b[2K');
+      } catch (err) {
+        process.stdout.write('\r\x1b[2K');
+        console.error(`  \x1b[31m✗\x1b[0m  Failed to fetch models: ${String(err)}\n`);
+        process.exit(1);
+      }
+      saveModels(fetched);
+      console.log(`  \x1b[32m✓\x1b[0m  Saved ${fetched.length} free models to \x1b[2m~/.config/snapsite/models.json\x1b[0m`);
+      console.log(`  \x1b[2mThese will be used for all future generation races.\x1b[0m\n`);
+      fetched.slice(0, 20).forEach((id, i) => {
+        const num = `\x1b[2m${String(i + 1).padStart(2)}.\x1b[0m`;
+        console.log(`  ${num}  \x1b[36m${id}\x1b[0m`);
+      });
+      if (fetched.length > 20) {
+        console.log(`  \x1b[2m  … and ${fetched.length - 20} more\x1b[0m`);
+      }
+      console.log(`\n  Set \x1b[33mSNAPSITE_MODELS=model1,model2\x1b[0m to use specific models only.\n`);
+      return;
+    }
+
+    const active = resolveRaceModels();
+    const savedInfo = loadSavedModelsInfo();
+    const source = process.env['SNAPSITE_MODELS']
+      ? '\x1b[33mSNAPSITE_MODELS\x1b[0m env var'
+      : savedInfo
+        ? `\x1b[2msaved config (${savedInfo.updatedAt.slice(0, 10)})\x1b[0m`
+        : '\x1b[2mbuilt-in defaults\x1b[0m';
+
+    console.log(`\n  \x1b[1mActive models\x1b[0m  \x1b[2m(source: ${source})\x1b[0m\n`);
+    active.forEach((id, i) => {
       const note = MODEL_NOTES[id] ?? '';
-      const label = id.replace(':free', '').split('/').at(-1) ?? id;
       const num = `\x1b[2m${String(i + 1).padStart(2)}.\x1b[0m`;
       console.log(`  ${num}  \x1b[36m${id.padEnd(52)}\x1b[0m \x1b[2m${note}\x1b[0m`);
     });
-    console.log(`\n  Use \x1b[33m--model <id>\x1b[0m to target a specific model.\n`);
+    console.log(`\n  \x1b[2mRun \x1b[0msnapsite list-models --refresh\x1b[2m to fetch the latest free models from OpenRouter.\x1b[0m`);
+    console.log(`  \x1b[2mSet \x1b[0mSNAPSITE_MODELS=model1,model2\x1b[2m to use specific models (e.g. paid ones).\x1b[0m`);
+    console.log(`  Use \x1b[33m--model <id>\x1b[0m to target a single model for one generation.\n`);
   });
 
 // ── auth ──────────────────────────────────────────────────────────────────────

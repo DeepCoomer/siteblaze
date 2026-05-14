@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build script for the landing-engine CLI package.
+ * Build script for the snapsite CLI package.
  *
  * Steps:
  *  1. Bundle CLI TypeScript → dist/index.js  (esbuild)

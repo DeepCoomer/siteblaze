@@ -20,6 +20,18 @@ export const FREE_MODELS = [
 
 export const DEFAULT_MODEL = FREE_MODELS[0];
 
+export const MODEL_NOTES: Record<string, string> = {
+  'nvidia/nemotron-3-nano-30b-a3b:free':          'fastest (~0.8s)',
+  'poolside/laguna-m.1:free':                     'fast (~2.9s)',
+  'openai/gpt-oss-20b:free':                      'fast (~4s)',
+  'openai/gpt-oss-120b:free':                     'fast (~4s)',
+  'minimax/minimax-m2.5:free':                    'fast (~4s)',
+  'nousresearch/hermes-3-llama-3.1-405b:free':    'sometimes rate-limited',
+  'qwen/qwen3-coder:free':                        'sometimes rate-limited',
+  'google/gemma-4-31b-it:free':                   'sometimes rate-limited',
+  'nvidia/nemotron-3-super-120b-a12b:free':       'slow (60-90s), reliable fallback',
+};
+
 // Prompt refinement — nemotron-nano confirmed fastest (0.8s) with high output quality
 const REFINE_MODEL = 'nvidia/nemotron-3-nano-30b-a3b:free';
 
@@ -302,14 +314,15 @@ export function inferSiteType(prompt: string): SiteType {
 export function extractCategoryHint(prompt: string): string {
   const lower = prompt.toLowerCase();
 
-  // 1. Structured SiteType keywords first — enum-backed, highest precision
-  const known = inferSiteType(prompt);
-  if (known !== 'landing') return known;
-
-  // 2. Niche domains not covered by the SiteType enum (restaurant, healthcare, etc.)
+  // 1. Niche domains first — specific multi-keyword categories beat generic single words
+  //    (e.g. "real estate agency" → real estate, not agency; "travel agency" → travel)
   for (const { keywords, label } of EXTENDED_CATEGORIES) {
     if (keywords.some(kw => lower.includes(kw))) return label;
   }
+
+  // 2. Structured SiteType keywords (enum-backed)
+  const known = inferSiteType(prompt);
+  if (known !== 'landing') return known;
 
   // Best-effort: pick the first two meaningful words from the prompt
   const words = lower
@@ -366,8 +379,8 @@ async function callModel(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://landing-engine.local',
-        'X-Title': 'Landing Engine CLI',
+        'HTTP-Referer': 'https://snapsite.dev',
+        'X-Title': 'Snapsite CLI',
       },
       body: JSON.stringify({ model, messages, temperature: 0.7 }),
       signal,

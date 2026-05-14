@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const CONFIG_DIR  = join(homedir(), '.config', 'landing-engine');
+const CONFIG_DIR  = join(homedir(), '.config', 'snapsite');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -49,12 +49,26 @@ function promptLine(question: string): Promise<string> {
   });
 }
 
+// ── Key validation ────────────────────────────────────────────────────────────
+
+async function validateApiKey(key: string): Promise<boolean> {
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(8_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Resolves the OpenRouter API key in priority order:
  *   1. Environment variable / project .env  (already extracted by caller)
- *   2. ~/.config/landing-engine/config.json
+ *   2. ~/.config/snapsite/config.json
  *   3. Interactive prompt — offers to save for future runs
  */
 export async function resolveApiKey(fromEnv: string | undefined): Promise<string> {
@@ -72,7 +86,7 @@ export async function resolveApiKey(fromEnv: string | undefined): Promise<string
     process.exit(1);
   }
 
-  const answer = await promptLine('  Save to ~/.config/landing-engine/ for future runs? [Y/n] ');
+  const answer = await promptLine('  Save to ~/.config/snapsite/ for future runs? [Y/n] ');
   if (answer.toLowerCase() !== 'n') {
     saveKey(key);
     console.log('  \x1b[32m✓\x1b[0m  Key saved.\n');
@@ -84,7 +98,7 @@ export async function resolveApiKey(fromEnv: string | undefined): Promise<string
 }
 
 /**
- * `landing-engine auth` — set or replace the saved API key.
+ * `snapsite auth` — set or replace the saved API key.
  */
 export async function configureAuth(): Promise<void> {
   const existing = loadSavedKey();
@@ -108,6 +122,15 @@ export async function configureAuth(): Promise<void> {
     return;
   }
 
+  process.stdout.write('  Validating key…');
+  const valid = await validateApiKey(key);
+  if (!valid) {
+    process.stdout.write('\r\x1b[2K');
+    console.error('  \x1b[31m✗\x1b[0m  Key rejected by OpenRouter — check the key and try again.\n');
+    return;
+  }
+  process.stdout.write('\r\x1b[2K');
+
   saveKey(key);
-  console.log(`  \x1b[32m✓\x1b[0m  Key saved to \x1b[2m${CONFIG_FILE}\x1b[0m\n`);
+  console.log(`  \x1b[32m✓\x1b[0m  Key valid and saved to \x1b[2m${CONFIG_FILE}\x1b[0m\n`);
 }

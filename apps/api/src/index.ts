@@ -17,7 +17,7 @@ app.get('/config', (req, res) => {
   const path = getConfigPath();
   if (!existsSync(path)) {
     res.status(404).json({
-      error: `config.json not found at ${path}. Run \`landing-engine preview\` to create one.`,
+      error: `config.json not found at ${path}. Run \`snapsite preview\` to create one.`,
     });
     return;
   }

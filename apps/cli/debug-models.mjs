@@ -49,8 +49,8 @@ async function testModel(model) {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://landing-engine.local',
-        'X-Title': 'Landing Engine Debug',
+        'HTTP-Referer': 'https://snapsite.dev',
+        'X-Title': 'Snapsite Debug',
       },
       body: JSON.stringify({
         model,

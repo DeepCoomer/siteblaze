@@ -7,13 +7,52 @@ import { fileURLToPath } from 'url';
 import concurrently from 'concurrently';
 import { findWorkspaceRoot, runPreview, runEmbeddedPreview } from './preview.js';
 import { eject } from './eject.js';
-import { scaffoldProject, rewriteHome, type Framework, type UiLib } from './scaffold.js';
+import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { generateHeroImage } from './images.js';
-import { generateLandingPage, refinePrompt, FREE_MODELS, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
+import { generateLandingPage, refinePrompt, FREE_MODELS, MODEL_NOTES, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
 import { isPublishedMode } from './server.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const { version: CLI_VERSION } = JSON.parse(
+  readFileSync(join(__dirname, '../package.json'), 'utf-8')
+) as { version: string };
+
+// ---------------------------------------------------------------------------
+// Package manager detection
+// ---------------------------------------------------------------------------
+
+type PkgManager = 'npm' | 'pnpm' | 'bun' | 'yarn';
+
+const PKG_MANAGERS: PkgManager[] = ['npm', 'pnpm', 'bun', 'yarn'];
+
+function detectPackageManager(cwd: string): PkgManager {
+  if (existsSync(join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
+  if (existsSync(join(cwd, 'bun.lockb')))      return 'bun';
+  if (existsSync(join(cwd, 'yarn.lock')))       return 'yarn';
+  return 'npm';
+}
+
+async function confirmPackageManager(cwd: string): Promise<PkgManager> {
+  const detected = detectPackageManager(cwd);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
+
+  const opts = PKG_MANAGERS.map((pm, i) => {
+    const marker = pm === detected ? ` \x1b[2m(detected)\x1b[0m` : '';
+    return `\x1b[36m${i + 1}\x1b[0m ${pm}${marker}`;
+  }).join('   ');
+
+  console.log(`  \x1b[2mPackage manager:\x1b[0m  ${opts}`);
+  const defaultIdx = PKG_MANAGERS.indexOf(detected) + 1;
+  const answer = await ask(`  Choose [1-4] — default ${detected}:  `);
+  rl.close();
+  console.log();
+
+  const idx = parseInt(answer.trim(), 10) - 1;
+  return (idx >= 0 && idx < PKG_MANAGERS.length) ? PKG_MANAGERS[idx] : detected;
+}
 
 // Nullable — null when running as a published package outside the monorepo
 let workspaceRoot: string | null = null;
@@ -115,8 +154,8 @@ function printBanner() {
     '',
     `  \x1b[35m╭──────────────────────────────────────╮\x1b[0m`,
     `  \x1b[35m│\x1b[0m                                      \x1b[35m│\x1b[0m`,
-    `  \x1b[35m│\x1b[0m   \x1b[1m\x1b[35m◆\x1b[0m  \x1b[1mlanding-engine\x1b[0m  \x1b[2mv0.1.0\x1b[0m          \x1b[35m│\x1b[0m`,
-    `  \x1b[35m│\x1b[0m      \x1b[2mAI · React · Tailwind\x1b[0m           \x1b[35m│\x1b[0m`,
+    `  \x1b[35m│\x1b[0m   \x1b[1m\x1b[35m◆\x1b[0m  \x1b[1msnapsite\x1b[0m  \x1b[2mv${CLI_VERSION}\x1b[0m                \x1b[35m│\x1b[0m`,
+    `  \x1b[35m│\x1b[0m      \x1b[2mGenerate · Scaffold · Ship\x1b[0m       \x1b[35m│\x1b[0m`,
     `  \x1b[35m│\x1b[0m                                      \x1b[35m│\x1b[0m`,
     `  \x1b[35m╰──────────────────────────────────────╯\x1b[0m`,
     '',
@@ -233,9 +272,9 @@ async function confirmUiLib(explicit?: string): Promise<UiLib> {
 const program = new Command();
 
 program
-  .name('landing-engine')
-  .description('Schema-driven landing page generator')
-  .version('0.1.0')
+  .name('snapsite')
+  .description('AI-powered site generator — from prompt to production-ready React project')
+  .version(CLI_VERSION)
   .hook('preAction', printBanner);
 
 // ── preview ──────────────────────────────────────────────────────────────────
@@ -268,16 +307,20 @@ program
   .option('-f, --framework <fw>', 'Output framework: vite | nextjs (prompted if omitted)')
   .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
   .option('--ui <lib>', 'UI library: tailwind | shadcn (prompted if omitted)')
-  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string }) => {
+  .option('--no-image', 'Skip hero image generation')
+  .option('-y, --yes', 'Skip all prompts and use defaults (vite, tailwind, npm, AI picks theme and name)')
+  .option('--verbose', 'Show model details and internal progress')
+  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string; image: boolean; yes?: boolean; verbose?: boolean }) => {
     const outputDir = opts.output ? resolve(opts.output) : process.cwd();
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
 
-    console.log(`\n\x1b[1mGenerating landing page\x1b[0m  "${prompt}"`);
-    if (opts.model) {
-      console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
-    } else {
-      console.log(`\x1b[2mRacing ${FREE_MODELS.length} free models — first valid response wins\x1b[0m\n`);
+    if (opts.verbose) {
+      if (opts.model) {
+        console.log(`\x1b[2mModel: ${opts.model}\x1b[0m\n`);
+      } else {
+        console.log(`\x1b[2mRacing ${FREE_MODELS.length} free models — first valid response wins\x1b[0m\n`);
+      }
     }
 
     // Resolve site category hint sent to the AI.
@@ -285,13 +328,14 @@ program
     // (may be a known type name or a free-form label like "restaurant")
     // and ask the user to confirm.
     const detectedCategory = opts.type ?? extractCategoryHint(prompt);
-    const siteType = opts.type
+    const siteType = (opts.yes || opts.type)
       ? detectedCategory
       : await confirmSiteType(detectedCategory);
 
-    const framework  = await confirmFramework(opts.framework);
-    const uiLib      = await confirmUiLib(opts.ui);
-    const themeMode  = await confirmTheme(opts.theme);
+    const framework   = opts.yes ? 'vite'     : await confirmFramework(opts.framework);
+    const uiLib       = opts.yes ? 'tailwind'  : await confirmUiLib(opts.ui);
+    const themeMode   = opts.yes ? undefined   : await confirmTheme(opts.theme);
+    const pkgManager  = opts.yes ? detectPackageManager(process.cwd()) : await confirmPackageManager(process.cwd());
 
     // Refine terse prompts before generation — skipped for detailed prompts (>=12 words)
     let refinedPrompt = prompt;
@@ -305,7 +349,7 @@ program
       );
     }
 
-    const spinner = startSpinner(opts.model ? 'Calling AI' : `Racing ${FREE_MODELS.length} models`);
+    const spinner = startSpinner('Generating your landing page');
 
     // Run AI + image generation truly in parallel
     // Image gen uses raw prompt (concrete nouns work better for visual models)
@@ -314,17 +358,58 @@ program
     let tmpImagePath: string | null;
     try {
       [tmpImagePath, aiResult] = await Promise.all([
-        generateHeroImage(prompt),
+        opts.image ? generateHeroImage(prompt) : Promise.resolve(null),
         generateLandingPage(refinedPrompt, { apiKey, model: opts.model, siteType, themeMode }),
       ]);
     } catch (err) {
       spinner.stop('\x1b[31m✗\x1b[0m  Generation failed');
-      console.error(`\n${String(err)}\n`);
+      const msg = String(err);
+      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+        console.error('\n  Invalid API key. Run \x1b[36msnapsite auth\x1b[0m to update it.\n');
+      } else if (msg.includes('All models failed') || msg.includes('aborted')) {
+        console.error('\n  All AI models failed to respond. Check your connection or try again.');
+        console.error('  Use \x1b[36m--model <id>\x1b[0m to target a specific model.\n');
+      } else {
+        console.error(`\n  ${msg}\n`);
+      }
       process.exit(1);
     }
 
-    spinner.stop(`\x1b[32m✓\x1b[0m  ${aiResult.model.split('/').at(-1)} responded`);
+    const modelLabel = opts.verbose ? `  \x1b[2m${aiResult.model}\x1b[0m` : '';
+    spinner.stop(`\x1b[32m✓\x1b[0m  Landing page generated${modelLabel}`);
     printSummary(aiResult.config as SummaryConfig);
+
+    // Project name confirmation
+    const aiSlug = toKebab(aiResult.config.metadata.siteName);
+    let projectSlug = aiSlug;
+    if (!opts.yes) {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const raw = await new Promise<string>(res => rl.question(
+        `  Project folder: \x1b[36m${aiSlug}\x1b[0m  \x1b[2m(Enter to confirm or type a name)\x1b[0m  `,
+        res
+      ));
+      rl.close();
+      console.log();
+      const trimmed = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (trimmed) projectSlug = trimmed;
+    }
+
+    // Check for directory conflict before scaffolding — ask to overwrite
+    const expectedDir = join(outputDir, projectSlug);
+    if (existsSync(expectedDir)) {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise<string>(res => rl.question(
+        `\n  \x1b[33m!\x1b[0m  Directory \x1b[1m${expectedDir.split('/').at(-1)}\x1b[0m already exists. Overwrite? [y/N]  `,
+        res
+      ));
+      rl.close();
+      console.log();
+      if (answer.trim().toLowerCase() !== 'y') {
+        console.log('  Aborted.\n');
+        process.exit(0);
+      }
+      rmSync(expectedDir, { recursive: true });
+    }
 
     const scaffoldSpinner = startSpinner('Scaffolding project');
     let finalProjectDir: string;
@@ -336,12 +421,19 @@ program
         workspaceRoot,
         undefined,
         framework,
-        uiLib
+        uiLib,
+        projectSlug
       );
       scaffoldSpinner.stop('\x1b[32m✓\x1b[0m  Project created');
     } catch (err) {
       scaffoldSpinner.stop('\x1b[31m✗\x1b[0m  Scaffold failed');
-      console.error(`\n${String(err)}\n`);
+      const msg = String(err);
+      if (msg.startsWith('Error: ERR_DIR_EXISTS:')) {
+        const dir = msg.replace('Error: ERR_DIR_EXISTS:', '');
+        console.error(`\n  Directory already exists: \x1b[1m${dir}\x1b[0m\n`);
+      } else {
+        console.error(`\n  ${msg}\n`);
+      }
       process.exit(1);
     }
 
@@ -370,15 +462,32 @@ program
 
     const folderName  = finalProjectDir.split('/').at(-1) ?? finalProjectDir;
     const editPath    = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
+    const runCmd      = pkgManager === 'npm' ? 'npm run dev' : `${pkgManager} dev`;
     console.log(`\n  \x1b[1mNext steps\x1b[0m`);
     console.log(`  \x1b[36mcd ${folderName}\x1b[0m`);
-    console.log(`  \x1b[36mnpm install\x1b[0m`);
-    console.log(`  \x1b[36mnpm run dev\x1b[0m`);
+    console.log(`  \x1b[36m${pkgManager} install\x1b[0m`);
+    console.log(`  \x1b[36m${runCmd}\x1b[0m`);
     if (uiLib === 'shadcn') {
       console.log(`\n  \x1b[2mshadcn/ui components are in src/components/ui/\x1b[0m`);
-      console.log(`  \x1b[2mAdd more components: npx shadcn@latest add <component>\x1b[0m`);
+      console.log(`  \x1b[2mAdd more: npx shadcn@latest add <component>\x1b[0m`);
     }
     console.log(`\n  Then edit \x1b[33m${editPath}\x1b[0m to customise your page.\n`);
+  });
+
+// ── list-models ───────────────────────────────────────────────────────────────
+
+program
+  .command('list-models')
+  .description('List all free models used in generation races')
+  .action(() => {
+    console.log('\n  \x1b[1mFree models\x1b[0m  \x1b[2m(raced in this order — first valid response wins)\x1b[0m\n');
+    FREE_MODELS.forEach((id, i) => {
+      const note = MODEL_NOTES[id] ?? '';
+      const label = id.replace(':free', '').split('/').at(-1) ?? id;
+      const num = `\x1b[2m${String(i + 1).padStart(2)}.\x1b[0m`;
+      console.log(`  ${num}  \x1b[36m${id.padEnd(52)}\x1b[0m \x1b[2m${note}\x1b[0m`);
+    });
+    console.log(`\n  Use \x1b[33m--model <id>\x1b[0m to target a specific model.\n`);
   });
 
 // ── auth ──────────────────────────────────────────────────────────────────────

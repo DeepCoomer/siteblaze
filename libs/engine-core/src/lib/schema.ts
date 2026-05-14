@@ -364,8 +364,8 @@ export const LandingPageSchema = z.object({
     fontFamily: z.enum(['sans', 'serif', 'mono']).default('sans'),
     enableThemeToggle: z.boolean().default(false),
     colors: z.object({
-      primary: z.string(),
-      secondary: z.string(),
+      primary: z.string().regex(/^#[0-9a-fA-F]{3,8}$/, 'Must be a valid hex color'),
+      secondary: z.string().regex(/^#[0-9a-fA-F]{3,8}$/, 'Must be a valid hex color'),
     }),
   }),
   sections: z.array(SectionSchema).min(1),

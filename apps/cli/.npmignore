@@ -1,0 +1,8 @@
+**/*.spec.js
+**/*.spec.d.ts
+**/*.spec.ts
+src/
+vitest.config.ts
+tsconfig*.json
+build.mjs
+debug-models.mjs

@@ -4,18 +4,36 @@
   "description": "AI-powered site generator — scaffold production-ready React projects from a text prompt",
   "type": "module",
   "bin": {
-    "snapsite": "./dist/index.js"
+    "snapsite": "dist/index.js"
   },
   "files": [
     "dist",
     "web",
-    "templates"
+    "templates",
+    "README.md"
   ],
   "engines": {
     "node": ">=20"
   },
-  "keywords": ["site-generator", "ai", "react", "tailwind", "shadcn", "scaffold", "openrouter"],
+  "keywords": [
+    "site-generator",
+    "ai",
+    "react",
+    "tailwind",
+    "shadcn",
+    "scaffold",
+    "openrouter",
+    "landing-page",
+    "nextjs",
+    "vite"
+  ],
   "license": "MIT",
+  "author": "deepcoomer",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepcoomer/snapsite.git"
+  },
+  "homepage": "https://github.com/deepcoomer/snapsite#readme",
   "dependencies": {
     "commander": "^12.0.0",
     "concurrently": "*",

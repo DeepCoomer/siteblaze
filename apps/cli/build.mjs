@@ -10,7 +10,7 @@
  */
 
 import * as esbuild from 'esbuild';
-import { cpSync, existsSync, mkdirSync, rmSync, readdirSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, rmSync, readdirSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -121,6 +121,17 @@ for (const file of SHADCN_SECTION_FILES) {
     process.exit(1);
   }
   cpSync(src, join(templateDest, 'shadcn', file));
+}
+
+// ── 4. Remove spec/test files from dist (tsc compilation artefacts) ──────────
+
+const distDir = join(__dirname, 'dist');
+if (existsSync(distDir)) {
+  for (const file of readdirSync(distDir)) {
+    if (file.includes('.spec.') || file.includes('.test.')) {
+      unlinkSync(join(distDir, file));
+    }
+  }
 }
 
 console.log(`\n✓  CLI bundled     → dist/index.js`);

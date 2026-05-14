@@ -142,6 +142,109 @@ describe('LandingPageSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts a SKILLS section with badge variant', () => {
+    const result = LandingPageSchema.safeParse({
+      ...validConfig,
+      sections: [
+        ...validConfig.sections,
+        {
+          type: 'SKILLS',
+          variant: 'badges',
+          content: {
+            title: 'My stack',
+            items: [
+              { name: 'TypeScript', level: 5 },
+              { name: 'React', icon: '⚛️' },
+              { name: 'Node.js', category: 'backend' },
+            ],
+          },
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a TIMELINE section', () => {
+    const result = LandingPageSchema.safeParse({
+      ...validConfig,
+      sections: [
+        ...validConfig.sections,
+        {
+          type: 'TIMELINE',
+          variant: 'vertical',
+          content: {
+            items: [
+              { year: '2022', title: 'Founded', description: 'Started the company' },
+              { year: '2023', title: 'Series A', description: 'Raised funding', tag: 'milestone' },
+            ],
+          },
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a COUNTDOWN section', () => {
+    const result = LandingPageSchema.safeParse({
+      ...validConfig,
+      sections: [
+        ...validConfig.sections,
+        {
+          type: 'COUNTDOWN',
+          variant: 'centered',
+          content: { title: 'Launching soon', date: '2026-12-31', ctaText: 'Get notified' },
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a CASE_STUDY section with all optional fields', () => {
+    const result = LandingPageSchema.safeParse({
+      ...validConfig,
+      sections: [
+        ...validConfig.sections,
+        {
+          type: 'CASE_STUDY',
+          variant: 'split',
+          content: {
+            title: 'How Acme doubled revenue',
+            problem: 'Slow onboarding',
+            solution: 'Automated flow',
+            results: [{ value: '2×', label: 'Revenue' }],
+            tags: ['saas', 'growth'],
+          },
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a SKILLS section with level out of range', () => {
+    const result = LandingPageSchema.safeParse({
+      ...validConfig,
+      sections: [
+        ...validConfig.sections,
+        {
+          type: 'SKILLS',
+          content: { items: [{ name: 'React', level: 6 }] },
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a COUNTDOWN section missing required date', () => {
+    const result = LandingPageSchema.safeParse({
+      ...validConfig,
+      sections: [
+        ...validConfig.sections,
+        { type: 'COUNTDOWN', content: { title: 'Soon' } },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('defaults variant to "centered" on HERO when omitted', () => {
     const result = LandingPageSchema.safeParse({
       ...validConfig,

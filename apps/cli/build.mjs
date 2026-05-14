@@ -35,10 +35,6 @@ await esbuild.build({
     'commander',
     'concurrently',
     'open',
-    // React is only used in the web app (pre-built); not needed in the CLI bundle
-    'react',
-    'react-dom',
-    'react/jsx-runtime',
   ],
   logLevel: 'info',
 });

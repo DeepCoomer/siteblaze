@@ -357,6 +357,8 @@ export interface GenerateResult {
   config: LandingPage;
   /** The model that produced the accepted response. */
   model: string;
+  /** Models that returned 404 / "no endpoints" during the race — likely deprecated. */
+  deprecatedModels?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -399,7 +401,12 @@ async function callModel(
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`${model}: OpenRouter ${res.status} — ${body}`);
+    const isDeprecated =
+      res.status === 404 ||
+      body.toLowerCase().includes('deprecated') ||
+      body.toLowerCase().includes('no endpoints found');
+    const prefix = isDeprecated ? 'DEPRECATED:' : '';
+    throw new Error(`${prefix}${model}: OpenRouter ${res.status} — ${body}`);
   }
 
   const data = (await res.json()) as {
@@ -494,6 +501,7 @@ async function generateRace(
   models: readonly string[],
 ): Promise<GenerateResult> {
   const controllers = models.map(() => new AbortController());
+  const deprecatedModels: string[] = [];
 
   const messages: Message[] = [
     { role: 'system', content: SYSTEM_PROMPT },
@@ -501,21 +509,23 @@ async function generateRace(
   ];
 
   const attempts = models.map((model, i) =>
-    callModel(messages, apiKey, model, controllers[i].signal).then((raw) => {
-      const parsed = extractJson(raw);
-      const result = LandingPageSchema.safeParse(parsed);
-      if (!result.success) {
-        throw new Error(`${model}: schema validation failed`);
-      }
-      return { config: result.data, model };
-    }),
+    callModel(messages, apiKey, model, controllers[i].signal)
+      .then((raw) => {
+        const parsed = extractJson(raw);
+        const result = LandingPageSchema.safeParse(parsed);
+        if (!result.success) throw new Error(`${model}: schema validation failed`);
+        return { config: result.data, model };
+      })
+      .catch((err: Error) => {
+        if (err.message.startsWith('DEPRECATED:')) deprecatedModels.push(model);
+        throw err;
+      }),
   );
 
   try {
     const winner = await Promise.any(attempts);
-    // Cancel all remaining in-flight requests
     controllers.forEach((c) => c.abort());
-    return winner;
+    return { ...winner, deprecatedModels: deprecatedModels.length ? deprecatedModels : undefined };
   } catch (err) {
     const errors =
       err instanceof AggregateError

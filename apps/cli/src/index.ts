@@ -384,6 +384,12 @@ program
 
     const modelLabel = opts.verbose ? `  \x1b[2m${aiResult.model}\x1b[0m` : '';
     spinner.stop(`\x1b[32m✓\x1b[0m  Landing page generated${modelLabel}`);
+
+    if (aiResult.deprecatedModels?.length) {
+      console.log(`\x1b[33m⚠  ${aiResult.deprecatedModels.length} model${aiResult.deprecatedModels.length === 1 ? '' : 's'} appear deprecated: ${aiResult.deprecatedModels.join(', ')}\x1b[0m`);
+      console.log(`\x1b[2m   Run \x1b[0msiteblaze list-models --refresh\x1b[2m to update your model list.\x1b[0m\n`);
+    }
+
     printSummary(aiResult.config as SummaryConfig);
 
     // Project name confirmation

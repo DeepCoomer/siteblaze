@@ -133,4 +133,5 @@ export async function configureAuth(): Promise<void> {
 
   saveKey(key);
   console.log(`  \x1b[32m✓\x1b[0m  Key valid and saved to \x1b[2m${CONFIG_FILE}\x1b[0m\n`);
+  process.exit(0);
 }

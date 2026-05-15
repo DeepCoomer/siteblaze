@@ -1,6 +1,6 @@
 # siteblaze
 
-**AI-powered site generator — from prompt to production-ready React project in seconds.**
+**One prompt. AI-generated React starter. Free. Yours.**
 
 ```bash
 npm i -g siteblaze
@@ -8,7 +8,7 @@ siteblaze auth
 siteblaze generate "SaaS landing page for a project management tool"
 ```
 
-No browser required. No subscription. Just your terminal, your API key, and a scaffolded project you actually own — or open a live preview in the browser and download when you're happy.
+No browser required. No subscription. Just your terminal, your API key, and a scaffolded project you actually own — or open a live browser editor and download when you're happy.
 
 ---
 
@@ -35,7 +35,7 @@ siteblaze auth
 # Generate and scaffold immediately
 siteblaze generate "Portfolio for a UX designer"
 
-# Or — preview in the browser first, download when happy
+# Or — open a live browser editor first, download when happy
 siteblaze generate "Portfolio for a UX designer" --preview
 ```
 
@@ -57,13 +57,34 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 
 | Flag | Description |
 |---|---|
-| `--preview` | Open a live browser preview before saving files |
-| `--framework <vite\|next>` | Override framework detection |
-| `--ui <tailwind\|shadcn>` | Override UI library choice |
+| `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
+| `--framework <vite\|next>` | Override framework (prompted if omitted) |
+| `--ui <tailwind\|shadcn>` | Override UI library (prompted if omitted) |
 | `--theme <light\|dark\|midnight>` | Set theme mode |
-| `--no-image` | Skip AI image generation |
-| `--yes` | Auto-confirm all prompts |
+| `--type <type>` | Site type: `landing` `portfolio` `saas` `agency` `blog` `ecommerce` `event` |
+| `--no-image` | Skip AI hero image generation |
+| `-y, --yes` | Auto-confirm all prompts, use defaults |
 | `--verbose` | Show model racing output |
+
+---
+
+## Preview mode
+
+Add `--preview` to open a browser editor before any files are written to disk:
+
+```bash
+siteblaze generate "Vault — a fintech app for wealth management" --preview
+```
+
+The editor opens at `http://localhost:3000` with a live page and a settings panel:
+
+- **Site name** — rename the project (sets the zip filename and folder on download)
+- **Theme** — Light, Dark, or Midnight
+- **Font** — Sans-serif, Serif, or Monospace
+- **Colors** — primary and secondary with a color picker or hex input
+- **Theme toggle** — show/hide the theme switcher button on the page
+
+Hit **Save** to apply changes to the live preview. Hit **↓ Download Project** to get a ready-to-run zip. Press `Ctrl+C` in the terminal to stop.
 
 ---
 
@@ -88,10 +109,10 @@ Precedence: `SITEBLAZE_MODELS` env → `~/.config/siteblaze/models.json` → bui
 ## Coming soon
 
 - `siteblaze publish` — deploy to Vercel / Netlify in one command
+- Section editing in the browser — reorder, add, and remove sections visually
 - Multi-page support — generate full sites, not just landing pages
 - `@siteblaze/react` — use the component engine in your own Next.js / Remix app
 - CMS integration — pull content from Contentful / Sanity into the schema
-- AI config editor — chat-based modifications in the browser preview
 
 ---
 
@@ -114,10 +135,10 @@ npm install
 npm exec nx run-many -- -t test --projects=@org/engine-core,@org/cli
 
 # Build CLI
-node apps/cli/build.mjs
+cd apps/cli && node build.mjs
 
-# Local dev
-npm link  # from apps/cli/ — makes siteblaze command available
+# Local dev (link CLI globally)
+cd apps/cli && npm link
 ```
 
 ---

@@ -1,6 +1,6 @@
 {
   "name": "siteblaze",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "AI-powered site generator — scaffold production-ready React projects from a text prompt",
   "type": "module",
   "bin": {
@@ -35,12 +35,14 @@
   },
   "homepage": "https://github.com/DeepCoomer/siteblaze#readme",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "commander": "^12.0.0",
     "concurrently": "*",
     "express": "^4.19.0",
     "open": "^10.0.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "esbuild": "^0.21.0"
   }
 }

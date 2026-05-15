@@ -107,12 +107,39 @@ function ConfigEditor({
     }
   }
 
-  function handleDownload() {
+  function handleDownloadConfig() {
     const blob = new Blob([text], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'config.json';
     a.click();
+  }
+
+  const [downloadState, setDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  async function handleDownloadProject() {
+    setDownloadState('loading');
+    try {
+      // Save current edits first so the server scaffolds the latest config
+      if (!parseError && text.trim()) {
+        await fetch(API_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: text,
+        });
+      }
+      const res = await fetch(API_URL.replace('/config', '/download'));
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'siteblaze-project.zip';
+      a.click();
+      setDownloadState('idle');
+    } catch {
+      setDownloadState('error');
+      setTimeout(() => setDownloadState('idle'), 3000);
+    }
   }
 
   const canApply = !parseError && text.trim() !== '';
@@ -184,11 +211,19 @@ function ConfigEditor({
             {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : 'Save to file'}
           </button>
           <button
-            onClick={handleDownload}
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            title="Download config.json"
+            onClick={handleDownloadProject}
+            disabled={downloadState === 'loading'}
+            className="flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            title="Download as a ready-to-run React project"
           >
-            ↓
+            {downloadState === 'loading' ? 'Zipping…' : downloadState === 'error' ? '✗ Failed' : '↓ Download Project'}
+          </button>
+          <button
+            onClick={handleDownloadConfig}
+            className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            title="Download config.json only"
+          >
+            ↓ JSON
           </button>
         </div>
       </aside>

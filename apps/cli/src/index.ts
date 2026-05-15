@@ -4,16 +4,17 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { execSync } from 'child_process';
 import { createInterface } from 'readline';
 import { join, dirname, resolve } from 'path';
+import { tmpdir } from 'os';
+import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
-import concurrently from 'concurrently';
-import { findWorkspaceRoot, runPreview, runEmbeddedPreview } from './preview.js';
+import { findWorkspaceRoot } from './preview.js';
+import { startServer, isPublishedMode } from './server.js';
 import { eject } from './eject.js';
 import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { generateHeroImage } from './images.js';
 import { resolveRaceModels, saveModels, loadSavedModelsInfo, fetchFreeModels } from './models.js';
 import { generateLandingPage, refinePrompt, FREE_MODELS, MODEL_NOTES, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
-import { isPublishedMode } from './server.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -280,24 +281,6 @@ program
   .version(CLI_VERSION)
   .hook('preAction', printBanner);
 
-// ── preview ──────────────────────────────────────────────────────────────────
-
-program
-  .command('preview')
-  .description('Start a local preview server — edits to config.json appear on refresh')
-  .action(() => {
-    if (isPublishedMode() || !workspaceRoot) {
-      runEmbeddedPreview(process.cwd());
-    } else {
-      runPreview({
-        cwd: () => process.cwd(),
-        fileExists: existsSync,
-        writeFile: writeFileSync,
-        run: concurrently,
-        workspaceRoot,
-      });
-    }
-  });
 
 // ── generate ─────────────────────────────────────────────────────────────────
 
@@ -313,7 +296,8 @@ program
   .option('--no-image', 'Skip hero image generation')
   .option('-y, --yes', 'Skip all prompts and use defaults (vite, tailwind, npm, AI picks theme and name)')
   .option('--verbose', 'Show model details and internal progress')
-  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string; image: boolean; yes?: boolean; verbose?: boolean }) => {
+  .option('--preview', 'Open in browser preview instead of scaffolding to disk — edit and download from the UI')
+  .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string; image: boolean; yes?: boolean; verbose?: boolean; preview?: boolean }) => {
     const outputDir = opts.output ? resolve(opts.output) : process.cwd();
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
@@ -392,6 +376,17 @@ program
     }
 
     printSummary(aiResult.config as SummaryConfig);
+
+    // ── Preview mode — open in browser, nothing written to disk yet ──────────
+    if (opts.preview) {
+      const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
+      mkdirSync(tempDir, { recursive: true });
+      const configPath = join(tempDir, 'config.json');
+      writeFileSync(configPath, JSON.stringify(aiResult.config, null, 2));
+      console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m\n`);
+      startServer(configPath);
+      return;
+    }
 
     // Project name confirmation
     const aiSlug = toKebab(aiResult.config.metadata.siteName);

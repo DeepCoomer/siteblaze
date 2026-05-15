@@ -8,7 +8,7 @@ siteblaze auth
 siteblaze generate "SaaS landing page for a project management tool"
 ```
 
-No browser. No subscription UI. Just your terminal, your API key, and a scaffolded project you actually own.
+No browser required. No subscription. Just your terminal, your API key, and a scaffolded project you actually own — or open a live preview in the browser and download when you're happy.
 
 ---
 
@@ -32,8 +32,11 @@ npm i -g siteblaze
 # Save your OpenRouter API key (free at openrouter.ai/keys)
 siteblaze auth
 
-# Generate a site
+# Generate and scaffold immediately
 siteblaze generate "Portfolio for a UX designer"
+
+# Or — preview in the browser first, download when happy
+siteblaze generate "Portfolio for a UX designer" --preview
 ```
 
 The generated project is a standalone repo. `cd` into it, `npm install`, `npm run dev`.
@@ -48,7 +51,6 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 | `siteblaze auth` | Save your OpenRouter API key |
 | `siteblaze list-models` | Show active models and their source |
 | `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |
-| `siteblaze preview` | Preview an existing `config.json` in the browser |
 | `siteblaze eject` | Eject the section components into your project |
 | `siteblaze --version` | Print version |
 
@@ -56,6 +58,7 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 
 | Flag | Description |
 |---|---|
+| `--preview` | Open a live browser preview before saving files |
 | `--framework <vite\|next>` | Override framework detection |
 | `--ui <tailwind\|shadcn>` | Override UI library choice |
 | `--theme <light\|dark\|midnight>` | Set theme mode |
@@ -89,7 +92,7 @@ Precedence: `SITEBLAZE_MODELS` env → `~/.config/siteblaze/models.json` → bui
 - Multi-page support — generate full sites, not just landing pages
 - `@siteblaze/react` — use the component engine in your own Next.js / Remix app
 - CMS integration — pull content from Contentful / Sanity into the schema
-- Interactive section editor — tweak config visually in the browser, save back to disk
+- AI config editor — chat-based modifications in the browser preview
 
 ---
 

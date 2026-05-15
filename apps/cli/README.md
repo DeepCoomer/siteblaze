@@ -24,9 +24,9 @@ Tools like v0, Bolt, and Lovable are browser-based platforms. siteblaze is a dev
 ## Install
 
 ```bash
-npm install -g @deepcoomer/siteblaze
+npm install -g siteblaze
 # or run without installing:
-npx @deepcoomer/siteblaze generate "your prompt"
+npx siteblaze generate "your prompt"
 ```
 
 Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/keys).
@@ -38,6 +38,9 @@ Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/ke
 ```bash
 # Generate a project (prompts for framework, UI library, package manager)
 siteblaze generate "Vault — a fintech app for wealth management"
+
+# Preview in the browser first, download when happy
+siteblaze generate "Vault — a fintech app for wealth management" --preview
 
 # Skip all prompts with sensible defaults
 siteblaze generate "Orbit — SaaS project tracker" --yes
@@ -60,6 +63,7 @@ siteblaze list-models --refresh
 
 | Flag | Description |
 |---|---|
+| `--preview` | Open a live browser preview before saving files |
 | `-m, --model <id>` | Force a specific OpenRouter model |
 | `-o, --output <path>` | Output directory (default: current dir) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |

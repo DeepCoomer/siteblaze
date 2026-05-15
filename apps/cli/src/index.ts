@@ -9,7 +9,6 @@ import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
 import { findWorkspaceRoot } from './preview.js';
 import { startServer, isPublishedMode } from './server.js';
-import { eject } from './eject.js';
 import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { generateHeroImage } from './images.js';
@@ -289,8 +288,8 @@ program
   .description('Generate a complete React + Tailwind project from a text prompt using AI')
   .option('-m, --model <model>', 'Specific OpenRouter model ID (omit to race all free models)')
   .option('-o, --output <path>', 'Directory to create the project in (default: current directory)')
-  .option('-t, --type <type>', 'Site type: landing | portfolio | agency | saas | blog (auto-detected if omitted)')
-  .option('-f, --framework <fw>', 'Output framework: vite | nextjs (prompted if omitted)')
+  .option('-t, --type <type>', 'Site type: landing | portfolio | agency | saas | blog | ecommerce | event (auto-detected if omitted)')
+  .option('-f, --framework <fw>', 'Output framework: vite | next (prompted if omitted)')
   .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
   .option('--ui <lib>', 'UI library: tailwind | shadcn (prompted if omitted)')
   .option('--no-image', 'Skip hero image generation')
@@ -333,12 +332,16 @@ program
     let refinedPrompt = prompt;
     if (prompt.trim().split(/\s+/).length < 12) {
       const refineSpinner = startSpinner('Expanding prompt');
-      refinedPrompt = await refinePrompt(prompt, apiKey);
-      refineSpinner.stop(
-        refinedPrompt !== prompt
-          ? `\x1b[32m✓\x1b[0m  Prompt expanded`
-          : `\x1b[2m~\x1b[0m  Prompt used as-is`
-      );
+      try {
+        refinedPrompt = await refinePrompt(prompt, apiKey);
+        refineSpinner.stop(
+          refinedPrompt !== prompt
+            ? `\x1b[32m✓\x1b[0m  Prompt expanded`
+            : `\x1b[2m~\x1b[0m  Prompt used as-is`
+        );
+      } catch {
+        refineSpinner.stop(`\x1b[2m~\x1b[0m  Prompt expansion skipped`);
+      }
     }
 
     const spinner = startSpinner('Generating your site');
@@ -563,12 +566,5 @@ program
   .command('auth')
   .description('Save your OpenRouter API key for all future runs')
   .action(configureAuth);
-
-// ── eject ─────────────────────────────────────────────────────────────────────
-
-program
-  .command('eject')
-  .description('Export a standalone landing-page.tsx from the current config.json')
-  .action(() => eject(process.cwd()));
 
 program.parse(process.argv);

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { inferSiteType, extractCategoryHint } from './ai.js';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { inferSiteType, extractCategoryHint, generateLandingPage } from './ai.js';
 
 // ---------------------------------------------------------------------------
 // inferSiteType
@@ -153,5 +153,43 @@ describe('extractCategoryHint', () => {
 
   it('returns fitness not saas for "yoga platform"', () => {
     expect(extractCategoryHint('yoga platform with live streaming classes')).toBe('fitness & wellness');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generateLandingPage — error propagation (fetch mocked)
+// ---------------------------------------------------------------------------
+
+describe('generateLandingPage — error handling', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('throws with "401" in the message when the API key is invalid', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized',
+    }));
+
+    await expect(
+      generateLandingPage('a simple landing page', {
+        apiKey: 'sk-bad-key',
+        model: 'openai/gpt-4o-mini',
+      }),
+    ).rejects.toThrow('401');
+  });
+
+  it('throws "All models failed" when every model in the race errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: async () => 'Service Unavailable',
+    }));
+
+    await expect(
+      generateLandingPage('a simple landing page', {
+        apiKey: 'sk-test',
+        models: ['openai/gpt-4o-mini', 'google/gemma-2-9b-it:free'],
+      }),
+    ).rejects.toThrow('All models failed');
   });
 });

@@ -51,7 +51,6 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 | `siteblaze auth` | Save your OpenRouter API key |
 | `siteblaze list-models` | Show active models and their source |
 | `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |
-| `siteblaze eject` | Eject the section components into your project |
 | `siteblaze --version` | Print version |
 
 ### Generate flags
@@ -103,7 +102,6 @@ PRs welcome. This repo is an Nx monorepo:
 ```
 apps/cli          # siteblaze CLI (published to npm)
 apps/web          # preview web app (bundled into CLI)
-apps/api          # local API server for the preview
 libs/engine-core  # AI generation + schema + React renderer
 libs/ui-elements  # section components (Tailwind + shadcn variants)
 ```

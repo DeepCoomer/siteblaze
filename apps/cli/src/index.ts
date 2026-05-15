@@ -386,7 +386,14 @@ program
       mkdirSync(tempDir, { recursive: true });
       const configPath = join(tempDir, 'config.json');
       writeFileSync(configPath, JSON.stringify(aiResult.config, null, 2));
-      console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m\n`);
+      console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
+      console.log(`  \x1b[2mPress Ctrl+C to stop.\x1b[0m\n`);
+      const cleanupPreview = () => {
+        try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
+        process.exit(0);
+      };
+      process.once('SIGINT', cleanupPreview);
+      process.once('SIGTERM', cleanupPreview);
       startServer(configPath);
       return;
     }

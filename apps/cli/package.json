@@ -1,6 +1,6 @@
 {
   "name": "siteblaze",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "AI-powered site generator — scaffold production-ready React projects from a text prompt",
   "type": "module",
   "bin": {

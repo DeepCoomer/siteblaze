@@ -35,14 +35,14 @@
   },
   "homepage": "https://github.com/DeepCoomer/siteblaze#readme",
   "dependencies": {
-    "archiver": "^8.0.0",
+    "adm-zip": "^0.5.16",
     "commander": "^12.0.0",
     "concurrently": "*",
     "express": "^4.19.0",
     "open": "^10.0.0"
   },
   "devDependencies": {
-    "@types/archiver": "^7.0.0",
+    "@types/adm-zip": "^0.5.7",
     "esbuild": "^0.21.0"
   }
 }

@@ -25,7 +25,7 @@ jobs:
         run: npm exec nx build @org/engine-core
 
       - name: Run tests
-        run: npm exec nx run-many -t test --projects=@org/engine-core,@org/cli
+        run: npm exec nx -- run-many -t test --projects=@org/engine-core,@org/cli
 
       - name: Typecheck CLI
         run: cd apps/cli && npx tsc --noEmit

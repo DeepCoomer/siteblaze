@@ -1,0 +1,1 @@
+npm exec nx -- run-many -t test --projects=@org/engine-core,@org/cli

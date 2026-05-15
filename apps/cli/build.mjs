@@ -35,6 +35,7 @@ await esbuild.build({
     'commander',
     'concurrently',
     'open',
+    'adm-zip',
   ],
   logLevel: 'info',
 });

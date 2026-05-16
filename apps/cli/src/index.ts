@@ -387,15 +387,24 @@ program
 
     // ── Preview mode — open in browser, nothing written to disk yet ──────────
     if (opts.preview) {
-      saveToHistory(aiResult.config, prompt);
+      const historyPath = saveToHistory(aiResult.config, prompt);
       const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
       mkdirSync(tempDir, { recursive: true });
       const configPath = join(tempDir, 'config.json');
       writeFileSync(configPath, JSON.stringify(aiResult.config, null, 2));
       console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
-      console.log(`  \x1b[2mPress Ctrl+C to stop.\x1b[0m\n`);
+      console.log(`  \x1b[2mSession saved — run \x1b[0msiteblaze open\x1b[2m later to reopen. Press Ctrl+C to stop.\x1b[0m\n`);
       const cleanupPreview = () => {
+        try {
+          if (historyPath) {
+            const current = readFileSync(configPath, 'utf-8');
+            const saved = JSON.parse(readFileSync(historyPath, 'utf-8')) as { id: string; prompt: string; siteName: string; savedAt: string; config: unknown };
+            saved.config = JSON.parse(current);
+            writeFileSync(historyPath, JSON.stringify(saved, null, 2));
+          }
+        } catch { /* ignore */ }
         try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
+        console.log(`\n  \x1b[32m✓\x1b[0m  Session saved. Run \x1b[1msiteblaze open\x1b[0m to reopen in the browser editor.\n`);
         process.exit(0);
       };
       process.once('SIGINT', cleanupPreview);
@@ -566,8 +575,16 @@ program
     console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
     console.log(`  \x1b[2mPress Ctrl+C to stop.\x1b[0m\n`);
 
+    const historyFilePath = choice as string;
     const cleanup = () => {
+      try {
+        const current = readFileSync(configPath, 'utf-8');
+        const saved = JSON.parse(readFileSync(historyFilePath, 'utf-8')) as { id: string; prompt: string; siteName: string; savedAt: string; config: unknown };
+        saved.config = JSON.parse(current);
+        writeFileSync(historyFilePath, JSON.stringify(saved, null, 2));
+      } catch { /* ignore */ }
       try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
+      console.log(`\n  \x1b[32m✓\x1b[0m  Session saved. Run \x1b[1msiteblaze open\x1b[0m to reopen in the browser editor.\n`);
       process.exit(0);
     };
     process.once('SIGINT', cleanup);

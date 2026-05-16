@@ -17,15 +17,16 @@ function slugify(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
 
-export function saveToHistory(config: unknown, prompt: string, dir = HISTORY_DIR): void {
+export function saveToHistory(config: unknown, prompt: string, dir = HISTORY_DIR): string | undefined {
   try {
     mkdirSync(dir, { recursive: true });
 
     const siteName = (config as { metadata?: { siteName?: string } })?.metadata?.siteName ?? 'site';
     const id = `${Date.now()}-${slugify(siteName)}`;
+    const filePath = join(dir, `${id}.json`);
 
     writeFileSync(
-      join(dir, `${id}.json`),
+      filePath,
       JSON.stringify({ id, prompt, siteName, savedAt: new Date().toISOString(), config }, null, 2)
     );
 
@@ -36,6 +37,8 @@ export function saveToHistory(config: unknown, prompt: string, dir = HISTORY_DIR
         try { rmSync(join(dir, f)); } catch { /* ignore */ }
       });
     }
+
+    return filePath;
   } catch { /* history is best-effort, never crash generation */ }
 }
 

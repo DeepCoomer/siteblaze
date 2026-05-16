@@ -1,4 +1,4 @@
-import { LandingPageSchema } from './schema.js';
+import { LandingPageSchema, SectionSchema } from './schema.js';
 import type { LandingPage } from './schema.js';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -582,4 +582,97 @@ export async function generateLandingPage(
     return generateSingle(prompt, apiKey, model);
   }
   return generateRace(prompt, apiKey, models ?? FREE_MODELS);
+}
+
+// ---------------------------------------------------------------------------
+// Section content fill (used by preview server when user adds a new section)
+// ---------------------------------------------------------------------------
+
+const FILL_CONTENT_SCHEMAS: Record<string, string> = {
+  NAVBAR:         `{ "logo": "string", "links": [{"label":"string","href":"#anchor"}], "ctaText": "optional string" }`,
+  HERO:           `{ "title": "string", "subtitle": "string", "ctaText": "string" }`,
+  FEATURES:       `{ "title": "optional string", "items": [{"icon":"emoji","title":"string","description":"string"}] }  — min 3 items`,
+  TESTIMONIALS:   `{ "title": "optional string", "items": [{"quote":"string","author":"string","role":"optional string"}] }  — min 3 items`,
+  PRICING:        `{ "title": "optional string", "tiers": [{"name":"string","price":"string","features":["string"],"ctaText":"string","highlighted":false}] }  — exactly 3 tiers (Free/Pro/Enterprise), set highlighted:true on Pro`,
+  CTA:            `{ "title": "string", "buttonText": "string", "subtitle": "optional string" }`,
+  FAQ:            `{ "title": "optional string", "items": [{"question":"string","answer":"string"}] }  — min 5 items`,
+  STATS:          `{ "title": "optional string", "items": [{"value":"string","label":"string","description":"optional string"}] }  — min 4 items`,
+  TEAM:           `{ "title": "optional string", "items": [{"name":"string","role":"string","bio":"optional string"}] }  — min 3 items`,
+  NEWSLETTER:     `{ "title": "string", "subtitle": "optional string", "placeholder": "optional string", "buttonText": "string" }`,
+  LOGO_CLOUD:     `{ "title": "optional string", "items": [{"name":"string"}] }  — min 5 brand/company names`,
+  SKILLS:         `{ "title": "optional string", "items": [{"name":"string","level":1,"icon":"optional emoji","category":"optional string"}] }  — min 6 items, level 1–5`,
+  TIMELINE:       `{ "title": "optional string", "items": [{"year":"string","title":"string","description":"string","tag":"optional string"}] }  — min 3 items`,
+  PORTFOLIO_GRID: `{ "title": "optional string", "items": [{"title":"string","description":"string","tags":["string"]}] }  — min 4 items`,
+  CONTACT_FORM:   `{ "title": "optional string", "subtitle": "optional string", "buttonText": "string" }`,
+  GALLERY:        `{ "title": "optional string", "items": [{"alt":"string"}] }  — min 4 items`,
+  PRODUCT_GRID:   `{ "title": "optional string", "items": [{"name":"string","price":"string","description":"optional string","badge":"optional string"}] }  — min 4 items`,
+  TRUST_BADGES:   `{ "items": [{"icon":"emoji","title":"string","description":"optional string"}] }  — min 3 items`,
+  COUNTDOWN:      `{ "title": "optional string", "date": "YYYY-MM-DD", "subtitle": "optional string", "ctaText": "optional string" }`,
+  SCHEDULE:       `{ "title": "optional string", "items": [{"time":"string","title":"string","description":"optional string","speaker":"optional string"}] }  — min 3 items`,
+  CASE_STUDY:     `{ "title": "string", "subtitle": "optional string", "problem": "optional string", "solution": "optional string", "results": [{"value":"string","label":"string"}], "ctaText": "optional string" }`,
+  VIDEO_EMBED:    `{ "title": "optional string", "subtitle": "optional string", "videoUrl": "optional string", "caption": "optional string" }`,
+};
+
+function buildFillPrompt(config: LandingPage, sectionType: string, sectionVariant: string): string {
+  const { siteName, siteType, themeMode } = config.metadata;
+
+  const contextLines = (config.sections as Array<{ type: string; content: Record<string, unknown> }>)
+    .slice(0, 6)
+    .map((s) => {
+      const hint = String(s.content['title'] ?? s.content['logo'] ?? '');
+      return `  ${s.type}${hint ? `: "${hint}"` : ''}`;
+    })
+    .join('\n');
+
+  const schema = FILL_CONTENT_SCHEMAS[sectionType] ?? '{ ... }';
+
+  return `You are filling content for a single section of an existing website.
+Return ONLY a raw JSON object — no markdown, no code fences, no explanation.
+
+Site: "${siteName}" (${siteType}, ${themeMode} theme)
+
+Existing sections for brand/tone context:
+${contextLines}
+
+Generate content for: ${sectionType} (${sectionVariant} variant)
+Content schema: ${schema}
+
+Rules:
+- Reference "${siteName}" and its industry naturally — no generic placeholders like "Feature 1" or "User Name"
+- Match the tone implied by the existing sections
+- Follow the item quantity minimums exactly
+- Return ONLY the content JSON object — no type/variant wrapper`;
+}
+
+export async function fillSectionContent(
+  config: LandingPage,
+  sectionType: string,
+  sectionVariant: string,
+  apiKey: string,
+  models: readonly string[],
+): Promise<Record<string, unknown>> {
+  const messages: Message[] = [{ role: 'user', content: buildFillPrompt(config, sectionType, sectionVariant) }];
+  const controllers = models.map(() => new AbortController());
+
+  const attempts = models.map((model, i) =>
+    callModel(messages, apiKey, model, controllers[i].signal)
+      .then((raw) => {
+        const parsed = extractJson(raw) as Record<string, unknown>;
+        const shell = { type: sectionType, variant: sectionVariant, content: parsed };
+        const result = SectionSchema.safeParse(shell);
+        if (!result.success) throw new Error(`${model}: content schema invalid`);
+        return parsed;
+      }),
+  );
+
+  try {
+    const content = await Promise.any(attempts);
+    controllers.forEach((c) => c.abort());
+    return content;
+  } catch (err) {
+    const errors = err instanceof AggregateError
+      ? err.errors.map((e: Error) => e.message).join('\n')
+      : String(err);
+    throw new Error(`All models failed to fill section:\n${errors}`);
+  }
 }

@@ -8,6 +8,15 @@ const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 
+export function loadSavedApiKey(): string | undefined {
+  try {
+    const raw = readFileSync(CONFIG_FILE, 'utf-8');
+    return (JSON.parse(raw) as { openRouterApiKey?: string }).openRouterApiKey || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function loadSavedKey(): string | undefined {
   try {
     const raw = readFileSync(CONFIG_FILE, 'utf-8');

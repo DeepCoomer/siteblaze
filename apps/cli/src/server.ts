@@ -1,5 +1,5 @@
 import express from 'express';
-import { createServer as createNetServer } from 'net';
+
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -7,6 +7,10 @@ import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
 import AdmZip from 'adm-zip';
 import { scaffoldProject } from './scaffold.js';
+import { fillSectionContent } from '@org/engine-core';
+import type { LandingPage } from '@org/engine-core';
+import { loadSavedApiKey } from './auth.js';
+import { resolveRaceModels } from './models.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -36,6 +40,34 @@ export function createApp(configPath: string, workspaceRoot: string | null = nul
     try {
       writeFileSync(configPath, JSON.stringify(req.body, null, 2));
       res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // ── AI section fill ───────────────────────────────────────────────────────
+
+  app.post('/fill-section', async (req, res) => {
+    const { sectionType, sectionVariant } = req.body as { sectionType: string; sectionVariant: string };
+
+    const apiKey = process.env['OPENROUTER_API_KEY'] ?? loadSavedApiKey();
+    if (!apiKey) {
+      res.status(401).json({ error: 'No API key. Run siteblaze auth to save your key.' });
+      return;
+    }
+
+    let config: LandingPage;
+    try {
+      config = JSON.parse(readFileSync(configPath, 'utf-8')) as LandingPage;
+    } catch {
+      res.status(500).json({ error: 'Failed to read config.' });
+      return;
+    }
+
+    try {
+      const models = resolveRaceModels();
+      const content = await fillSectionContent(config, sectionType, sectionVariant, apiKey, models);
+      res.json({ content });
     } catch (err) {
       res.status(500).json({ error: String(err) });
     }
@@ -99,33 +131,31 @@ export function createApp(configPath: string, workspaceRoot: string | null = nul
   return app;
 }
 
-function findFreePort(start = 3000, max = 3020): Promise<number> {
-  return new Promise((resolve, reject) => {
-    if (start > max) { reject(new Error(`No free port found in range 3000–${max}`)); return; }
-    const probe = createNetServer();
-    probe.listen(start, '127.0.0.1');
-    probe.once('listening', () => probe.close(() => resolve(start)));
-    probe.once('error', () => findFreePort(start + 1, max).then(resolve, reject));
-  });
-}
+export function startServer(configPath: string, basePort = 3000, maxPort = 3020): void {
+  const app = createApp(configPath);
 
-export async function startServer(configPath: string, basePort = 3000): Promise<void> {
-  let port: number;
-  try {
-    port = await findFreePort(basePort);
-  } catch (err) {
-    console.error(`\n${(err as Error).message}\n`);
-    process.exit(1);
+  function tryListen(port: number): void {
+    if (port > maxPort) {
+      console.error(`\nNo free port found in range ${basePort}–${maxPort}\n`);
+      process.exit(1);
+    }
+    const server = app.listen(port);
+    server.once('listening', () => {
+      const url = `http://localhost:${port}`;
+      console.log(`\n  Preview  →  ${url}\n`);
+      import('open').then(({ default: open }) => open(url)).catch(() => { /* best-effort */ });
+    });
+    server.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        tryListen(port + 1);
+      } else {
+        console.error(`\nServer error: ${err.message}\n`);
+        process.exit(1);
+      }
+    });
   }
 
-  const app = createApp(configPath);
-  app.listen(port, () => {
-    const url = `http://localhost:${port}`;
-    console.log(`\n  Preview  →  ${url}\n`);
-    import('open')
-      .then(({ default: open }) => open(url))
-      .catch(() => { /* best-effort */ });
-  });
+  tryListen(basePort);
 }
 
 /** True when the pre-built web app is present (published / bundled mode). */

@@ -206,6 +206,35 @@ describe('scaffoldProject — shadcn/ui extras', () => {
   });
 });
 
+describe('scaffoldProject — enableThemeToggle', () => {
+  it('generates a static Home.tsx when enableThemeToggle is false', () => {
+    const outDir = join(baseOutputDir, 'toggle-off');
+    mkdirSync(outDir, { recursive: true });
+    const dir = scaffoldProject({ ...MIN_CONFIG, metadata: { ...MIN_CONFIG.metadata, enableThemeToggle: false } }, outDir, workspaceRoot);
+    const home = require('fs').readFileSync(join(dir, 'src', 'Home.tsx'), 'utf-8') as string;
+    expect(home).not.toContain('useState');
+    expect(home).not.toContain('THEME_CYCLE');
+  });
+
+  it('generates a stateful Home.tsx with toggle when enableThemeToggle is true', () => {
+    const outDir = join(baseOutputDir, 'toggle-on');
+    mkdirSync(outDir, { recursive: true });
+    const dir = scaffoldProject({ ...MIN_CONFIG, metadata: { ...MIN_CONFIG.metadata, enableThemeToggle: true } }, outDir, workspaceRoot);
+    const home = require('fs').readFileSync(join(dir, 'src', 'Home.tsx'), 'utf-8') as string;
+    expect(home).toContain('useState');
+    expect(home).toContain('THEME_CYCLE');
+    expect(home).toContain('THEME_ICONS');
+  });
+
+  it('initialises theme state from config themeMode', () => {
+    const outDir = join(baseOutputDir, 'toggle-midnight');
+    mkdirSync(outDir, { recursive: true });
+    const dir = scaffoldProject({ ...MIN_CONFIG, metadata: { ...MIN_CONFIG.metadata, themeMode: 'midnight', enableThemeToggle: true } }, outDir, workspaceRoot);
+    const home = require('fs').readFileSync(join(dir, 'src', 'Home.tsx'), 'utf-8') as string;
+    expect(home).toContain("useState<ThemeMode>('midnight')");
+  });
+});
+
 describe('scaffoldProject — error cases', () => {
   it('throws ERR_DIR_EXISTS when output directory already exists', () => {
     const outDir = join(baseOutputDir, 'collision');

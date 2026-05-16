@@ -43,6 +43,7 @@ export type ScaffoldConfig = {
     siteName: string;
     themeMode?: string;
     fontFamily?: string;
+    enableThemeToggle?: boolean;
     colors: { primary: string; secondary: string };
   };
   sections: Array<{ type: string; variant?: string; content: unknown }>;
@@ -506,7 +507,7 @@ function generateHomeTsx(
   heroImageUrl?: string,
   framework: Framework = 'vite'
 ): string {
-  const { colors, themeMode = 'light', fontFamily = 'sans' } = config.metadata;
+  const { colors, themeMode = 'light', fontFamily = 'sans', enableThemeToggle = false } = config.metadata;
 
   const imports = usedTypes
     .map((t) => {
@@ -515,9 +516,7 @@ function generateHomeTsx(
     })
     .join('\n');
 
-  const bgClass   = THEME_BG[themeMode]   ?? THEME_BG['light'];
   const fontClass = FONT_CLASS[fontFamily] ?? FONT_CLASS['sans'];
-  // Next.js App Router requires "use client" for components with event handlers
   const directive = framework === 'nextjs' ? `'use client';\n\n` : '';
 
   const sectionJsx = config.sections.map((section) => {
@@ -537,6 +536,59 @@ function generateHomeTsx(
     return `      <${info.component}${variantProp}\n        content={${contentLines}}\n        theme={theme}\n      />`;
   }).join('\n');
 
+  if (enableThemeToggle) {
+    return `${directive}import React, { useState } from 'react';
+import type { Theme } from './theme';
+${imports}
+
+type ThemeMode = 'light' | 'dark' | 'midnight';
+
+const THEME_CLASSES: Record<ThemeMode, string> = {
+  light: 'bg-white text-gray-900',
+  dark: 'bg-gray-900 text-gray-100',
+  midnight: 'bg-slate-950 text-white',
+};
+
+const THEME_CYCLE: Record<ThemeMode, ThemeMode> = {
+  light: 'dark',
+  dark: 'midnight',
+  midnight: 'light',
+};
+
+const THEME_ICONS: Record<ThemeMode, string> = {
+  light: '☀️',
+  dark: '🌙',
+  midnight: '✦',
+};
+
+export function Home() {
+  const [themeMode, setThemeMode] = useState<ThemeMode>('${themeMode}');
+  const theme: Theme = {
+    colors: { primary: '${colors.primary}', secondary: '${colors.secondary}' },
+    themeMode,
+    fontFamily: '${fontFamily}',
+  };
+  return (
+    <main
+      className={"min-h-screen ${fontClass} " + THEME_CLASSES[themeMode]}
+      style={{ '--color-primary': '${colors.primary}', '--color-secondary': '${colors.secondary}' } as React.CSSProperties}
+    >
+${sectionJsx}
+      <button
+        onClick={() => setThemeMode(THEME_CYCLE[themeMode])}
+        aria-label="Toggle theme"
+        className={"fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 " + (themeMode === 'light' ? 'bg-gray-900 text-white' : 'bg-white/10 text-white backdrop-blur-md border border-white/20')}
+      >
+        <span>{THEME_ICONS[themeMode]}</span>
+        <span className="capitalize">{themeMode}</span>
+      </button>
+    </main>
+  );
+}
+`;
+  }
+
+  const bgClass = THEME_BG[themeMode] ?? THEME_BG['light'];
   return `${directive}import React from 'react';
 import type { Theme } from './theme';
 ${imports}

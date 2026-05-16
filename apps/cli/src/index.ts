@@ -282,7 +282,8 @@ program
   .name('siteblaze')
   .description('AI picks sections, not code. Clean React. Free. Yours.')
   .version(CLI_VERSION)
-  .hook('preAction', printBanner);
+  .hook('preAction', printBanner)
+  .addHelpText('after', '\nRun siteblaze generate --help to see all flags (--preview, --framework, --ui, --theme, --yes, --type, and more).');
 
 
 // ── generate ─────────────────────────────────────────────────────────────────

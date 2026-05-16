@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 import * as clack from '@clack/prompts';
-import { join, dirname, resolve } from 'path';
+import { join, dirname, basename, resolve } from 'path';
 import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
@@ -292,7 +292,7 @@ program
   .command('generate <prompt>')
   .description('Generate a complete React + Tailwind project from a text prompt using AI')
   .option('-m, --model <model>', 'Specific OpenRouter model ID (omit to race all free models)')
-  .option('-o, --output <path>', 'Directory to create the project in (default: current directory)')
+  .option('-o, --output <path>', 'Scaffold directly into this path — the path IS the destination, not a parent folder')
   .option('-t, --type <type>', 'Site type: landing | portfolio | agency | saas | blog | ecommerce | event (auto-detected if omitted)')
   .option('-f, --framework <fw>', 'Output framework: vite | next (prompted if omitted)')
   .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
@@ -302,7 +302,11 @@ program
   .option('--verbose', 'Show model details and internal progress')
   .option('--preview', 'Open in browser preview instead of scaffolding to disk — edit and download from the UI')
   .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string; image: boolean; yes?: boolean; verbose?: boolean; preview?: boolean }) => {
-    const outputDir = opts.output ? resolve(opts.output) : process.cwd();
+    // --output path IS the destination directory (create-next-app convention).
+    // No --output → create an ai-slug subfolder inside cwd (unchanged).
+    const isExplicitOutput = !!opts.output;
+    const resolvedOutput = opts.output ? resolve(opts.output) : null;
+    const outputDir = resolvedOutput ? dirname(resolvedOutput) : process.cwd();
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
 
@@ -413,10 +417,12 @@ program
       return;
     }
 
-    // Project name confirmation
+    // Project name: derived from --output basename when explicit, otherwise AI slug with optional prompt
     const aiSlug = toKebab(aiResult.config.metadata.siteName);
-    let projectSlug = aiSlug;
-    if (!opts.yes) {
+    let projectSlug = isExplicitOutput
+      ? (toKebab(basename(resolvedOutput!)) || aiSlug)
+      : aiSlug;
+    if (!isExplicitOutput && !opts.yes) {
       const raw = await clack.text({
         message: 'App name',
         placeholder: aiSlug,

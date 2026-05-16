@@ -66,7 +66,7 @@ siteblaze open
 |---|---|
 | `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
 | `-m, --model <id>` | Force a specific OpenRouter model |
-| `-o, --output <path>` | Output directory (default: current dir) |
+| `-o, --output <path>` | Scaffold directly into this path (the path IS the destination — `--output ./my-app` creates `./my-app/`, not `./my-app/<slug>/`) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
 | `-f, --framework <fw>` | `vite` (default) or `next` |
 | `--theme <mode>` | `light` `dark` `midnight` |

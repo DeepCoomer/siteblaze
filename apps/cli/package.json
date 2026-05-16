@@ -1,7 +1,7 @@
 {
   "name": "siteblaze",
-  "version": "0.2.1",
-  "description": "AI-powered site generator — scaffold production-ready React projects from a text prompt",
+  "version": "0.3.0",
+  "description": "AI picks sections, not code. Clean React. Free. Yours.",
   "type": "module",
   "bin": {
     "siteblaze": "dist/index.js"

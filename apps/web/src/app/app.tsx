@@ -15,6 +15,35 @@ type FetchState =
   | { status: 'error'; message: string }
   | { status: 'ok'; config: unknown; defaultTheme: ThemeMode; enableThemeToggle: boolean };
 
+type QuickMeta = {
+  siteName: string;
+  themeMode: string;
+  fontFamily: string;
+  enableThemeToggle: boolean;
+  primaryColor: string;
+  secondaryColor: string;
+};
+
+function extractQuickMeta(jsonText: string): QuickMeta | null {
+  try {
+    const p = JSON.parse(jsonText) as { metadata?: Record<string, unknown> };
+    const m = p.metadata ?? {};
+    const colors = (m['colors'] as Record<string, string>) ?? {};
+    const primary = String(colors['primary'] ?? '#6366f1');
+    const secondary = String(colors['secondary'] ?? '#8b5cf6');
+    return {
+      siteName: String(m['siteName'] ?? ''),
+      themeMode: String(m['themeMode'] ?? 'light'),
+      fontFamily: String(m['fontFamily'] ?? 'sans'),
+      enableThemeToggle: Boolean(m['enableThemeToggle'] ?? false),
+      primaryColor: /^#[0-9a-f]{6}$/i.test(primary) ? primary : '#6366f1',
+      secondaryColor: /^#[0-9a-f]{6}$/i.test(secondary) ? secondary : '#8b5cf6',
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Theme toggle
 // ---------------------------------------------------------------------------
@@ -56,15 +85,14 @@ function ConfigEditor({
   const [text, setText] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [downloadState, setDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync textarea when drawer opens
   useEffect(() => {
     if (open) {
       setText(JSON.stringify(config, null, 2));
       setParseError(null);
       setSaveState('idle');
-      setTimeout(() => textareaRef.current?.focus(), 50);
     }
   }, [open, config]);
 
@@ -78,13 +106,17 @@ function ConfigEditor({
     }
   }
 
-  function handleApply() {
+  // Patch a metadata field and update the JSON textarea
+  function patchMeta(updater: (meta: Record<string, unknown>) => void) {
     try {
-      const parsed = JSON.parse(text);
-      onApply(parsed);
+      const parsed = JSON.parse(text) as { metadata?: Record<string, unknown> };
+      if (!parsed.metadata) parsed.metadata = {};
+      updater(parsed.metadata);
+      const updated = JSON.stringify(parsed, null, 2);
+      setText(updated);
       setParseError(null);
-    } catch (e) {
-      setParseError((e as Error).message);
+    } catch {
+      /* JSON currently invalid — quick settings are read-only */
     }
   }
 
@@ -92,7 +124,7 @@ function ConfigEditor({
     try {
       const parsed = JSON.parse(text);
       setSaveState('saving');
-      const res = await fetch(API_URL.replace('/config', '/config'), {
+      const res = await fetch(API_URL, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(parsed),
@@ -115,12 +147,9 @@ function ConfigEditor({
     a.click();
   }
 
-  const [downloadState, setDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
-
   async function handleDownloadProject() {
     setDownloadState('loading');
     try {
-      // Save current edits first so the server scaffolds the latest config
       if (!parseError && text.trim()) {
         await fetch(API_URL, {
           method: 'PUT',
@@ -131,9 +160,12 @@ function ConfigEditor({
       const res = await fetch(API_URL.replace('/config', '/download'));
       if (!res.ok) throw new Error(await res.text());
       const blob = await res.blob();
+      const disposition = res.headers.get('content-disposition') ?? '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] ?? 'siteblaze-project.zip';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'siteblaze-project.zip';
+      a.download = filename;
       a.click();
       setDownloadState('idle');
     } catch {
@@ -142,7 +174,12 @@ function ConfigEditor({
     }
   }
 
-  const canApply = !parseError && text.trim() !== '';
+  const quickMeta = parseError ? null : extractQuickMeta(text);
+  const canSave = !parseError && text.trim() !== '';
+
+  const inputCls = 'w-full rounded bg-white/5 border border-white/10 px-3 py-1.5 text-sm text-white outline-none focus:border-indigo-500 transition-colors';
+  const selectCls = 'w-full rounded bg-gray-800 border border-white/10 px-2 py-1.5 text-sm text-white outline-none focus:border-indigo-500 transition-colors cursor-pointer';
+  const labelCls = 'block text-xs text-gray-400 mb-1';
 
   return (
     <>
@@ -170,8 +207,9 @@ function ConfigEditor({
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <h2 className="text-sm font-semibold">config.json</h2>
+          <h2 className="text-sm font-semibold">Edit site</h2>
           <button
             onClick={() => setOpen(false)}
             className="rounded p-1 text-gray-400 hover:text-white"
@@ -181,34 +219,166 @@ function ConfigEditor({
           </button>
         </div>
 
+        {/* Quick settings */}
+        <div className="border-b border-white/10 px-5 py-4 space-y-3 shrink-0">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Site settings</p>
+
+          {/* Site name */}
+          <div>
+            <label className={labelCls}>Site name</label>
+            <input
+              type="text"
+              value={quickMeta?.siteName ?? ''}
+              disabled={!quickMeta}
+              onChange={(e) => patchMeta((m) => { m['siteName'] = e.target.value; })}
+              className={inputCls + ' disabled:opacity-40'}
+              placeholder="My Awesome Site"
+            />
+          </div>
+
+          {/* Theme + Font + Toggle row */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className={labelCls}>Theme</label>
+              <select
+                value={quickMeta?.themeMode ?? 'light'}
+                disabled={!quickMeta}
+                onChange={(e) => patchMeta((m) => { m['themeMode'] = e.target.value; })}
+                className={selectCls + ' disabled:opacity-40'}
+              >
+                <option value="light">☀️  Light</option>
+                <option value="dark">🌙  Dark</option>
+                <option value="midnight">✦  Midnight</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>Font</label>
+              <select
+                value={quickMeta?.fontFamily ?? 'sans'}
+                disabled={!quickMeta}
+                onChange={(e) => patchMeta((m) => { m['fontFamily'] = e.target.value; })}
+                className={selectCls + ' disabled:opacity-40'}
+              >
+                <option value="sans">Sans-serif</option>
+                <option value="serif">Serif</option>
+                <option value="mono">Monospace</option>
+              </select>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 pt-0.5">
+              <label className={labelCls + ' whitespace-nowrap'}>Theme toggle</label>
+              <button
+                disabled={!quickMeta}
+                onClick={() => quickMeta && patchMeta((m) => { m['enableThemeToggle'] = !quickMeta.enableThemeToggle; })}
+                className={`relative inline-flex h-6 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-40 ${
+                  quickMeta?.enableThemeToggle ? 'bg-indigo-600' : 'bg-gray-700'
+                }`}
+                role="switch"
+                aria-checked={quickMeta?.enableThemeToggle ?? false}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
+                    quickMeta?.enableThemeToggle ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Colors row */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className={labelCls}>Primary color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={quickMeta?.primaryColor ?? '#6366f1'}
+                  disabled={!quickMeta}
+                  onChange={(e) => patchMeta((m) => {
+                    if (!m['colors']) m['colors'] = {};
+                    (m['colors'] as Record<string, string>)['primary'] = e.target.value;
+                  })}
+                  className="h-8 w-10 shrink-0 cursor-pointer rounded border border-white/10 bg-transparent p-0.5 disabled:opacity-40"
+                />
+                <input
+                  type="text"
+                  value={quickMeta?.primaryColor ?? '#6366f1'}
+                  disabled={!quickMeta}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^#[0-9a-f]{6}$/i.test(val)) {
+                      patchMeta((m) => {
+                        if (!m['colors']) m['colors'] = {};
+                        (m['colors'] as Record<string, string>)['primary'] = val;
+                      });
+                    }
+                  }}
+                  maxLength={7}
+                  className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 font-mono text-xs text-gray-300 outline-none focus:border-indigo-500 transition-colors disabled:opacity-40"
+                  placeholder="#6366f1"
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>Secondary color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={quickMeta?.secondaryColor ?? '#8b5cf6'}
+                  disabled={!quickMeta}
+                  onChange={(e) => patchMeta((m) => {
+                    if (!m['colors']) m['colors'] = {};
+                    (m['colors'] as Record<string, string>)['secondary'] = e.target.value;
+                  })}
+                  className="h-8 w-10 shrink-0 cursor-pointer rounded border border-white/10 bg-transparent p-0.5 disabled:opacity-40"
+                />
+                <input
+                  type="text"
+                  value={quickMeta?.secondaryColor ?? '#8b5cf6'}
+                  disabled={!quickMeta}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^#[0-9a-f]{6}$/i.test(val)) {
+                      patchMeta((m) => {
+                        if (!m['colors']) m['colors'] = {};
+                        (m['colors'] as Record<string, string>)['secondary'] = val;
+                      });
+                    }
+                  }}
+                  maxLength={7}
+                  className="w-full rounded bg-white/5 border border-white/10 px-2 py-1.5 font-mono text-xs text-gray-300 outline-none focus:border-indigo-500 transition-colors disabled:opacity-40"
+                  placeholder="#8b5cf6"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Raw JSON — sections and advanced editing */}
+        <div className="flex items-center justify-between px-5 pt-3 pb-1 shrink-0">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Raw JSON</p>
+        </div>
+
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(e) => handleChange(e.target.value)}
-          className="flex-1 resize-none bg-transparent p-5 font-mono text-xs text-gray-200 outline-none"
+          className="flex-1 resize-none bg-transparent px-5 pb-3 font-mono text-xs text-gray-200 outline-none min-h-0"
           spellCheck={false}
         />
 
         {parseError && (
-          <p className="border-t border-red-900/50 bg-red-950/50 px-5 py-2 text-xs text-red-400">
+          <p className="border-t border-red-900/50 bg-red-950/50 px-5 py-2 text-xs text-red-400 shrink-0">
             {parseError}
           </p>
         )}
 
-        <div className="flex gap-2 border-t border-white/10 p-4">
-          <button
-            onClick={handleApply}
-            disabled={!canApply}
-            className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-          >
-            Preview
-          </button>
+        <div className="flex gap-2 border-t border-white/10 p-4 shrink-0">
           <button
             onClick={handleSave}
-            disabled={!canApply || saveState === 'saving'}
+            disabled={!canSave || saveState === 'saving'}
             className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : 'Save to file'}
+            {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : 'Save'}
           </button>
           <button
             onClick={handleDownloadProject}
@@ -300,7 +470,9 @@ export function App() {
   }
 
   const effectiveConfig = liveConfig ?? state.config;
-  const effectiveTheme  = themeOverride ?? state.defaultTheme;
+  const configThemeMeta = (effectiveConfig as { metadata?: { themeMode?: string } })?.metadata?.themeMode;
+  const configTheme = (THEMES.includes(configThemeMeta as ThemeMode) ? configThemeMeta : state.defaultTheme) as ThemeMode;
+  const effectiveTheme = themeOverride ?? configTheme;
 
   return (
     <>

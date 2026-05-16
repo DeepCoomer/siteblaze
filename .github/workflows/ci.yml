@@ -24,6 +24,9 @@ jobs:
       - name: Build engine-core
         run: npm exec nx build @org/engine-core
 
+      - name: Build web app
+        run: npm exec nx build @org/web -- --skip-nx-cache
+
       - name: Build CLI
         run: cd apps/cli && node build.mjs
 

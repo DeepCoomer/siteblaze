@@ -1,4 +1,4 @@
-import { createInterface } from 'readline';
+import * as clack from '@clack/prompts';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -21,32 +21,6 @@ function saveKey(key: string): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
   // 0o600 = owner read/write only — key never visible to other users
   writeFileSync(CONFIG_FILE, JSON.stringify({ openRouterApiKey: key }, null, 2), { mode: 0o600 });
-}
-
-// ── Terminal helpers ──────────────────────────────────────────────────────────
-
-function promptHidden(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    // Suppress echoing so keystrokes don't appear in the terminal
-    (rl as unknown as { _writeToOutput(s: string): void })._writeToOutput = (s: string) => {
-      if (s === '\r\n' || s === '\n') process.stdout.write('\n');
-    };
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-}
-
-function promptLine(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
 }
 
 // ── Key validation ────────────────────────────────────────────────────────────
@@ -77,24 +51,27 @@ export async function resolveApiKey(fromEnv: string | undefined): Promise<string
   const saved = loadSavedKey();
   if (saved) return saved;
 
-  console.log('\n  \x1b[1mOpenRouter API key required\x1b[0m');
-  console.log('  Get a free key at \x1b[36mhttps://openrouter.ai/keys\x1b[0m\n');
+  clack.log.info('OpenRouter API key required. Get a free key at https://openrouter.ai/keys');
 
-  const key = await promptHidden('  Paste your API key (input hidden): ');
-  if (!key) {
-    console.error('\n  No key entered — aborting.\n');
+  const key = await clack.password({ message: 'Paste your API key' });
+  if (clack.isCancel(key) || !key) {
+    clack.cancel('No key entered — aborting.');
     process.exit(1);
   }
 
-  const answer = await promptLine('  Save to ~/.config/siteblaze/ for future runs? [Y/n] ');
-  if (answer.toLowerCase() !== 'n') {
-    saveKey(key);
-    console.log('  \x1b[32m✓\x1b[0m  Key saved.\n');
-  } else {
-    console.log();
+  const save = await clack.confirm({
+    message: 'Save to ~/.config/siteblaze/ for future runs?',
+    initialValue: true,
+  });
+  if (clack.isCancel(save)) {
+    process.exit(0);
+  }
+  if (save) {
+    saveKey(key as string);
+    clack.log.success('Key saved.');
   }
 
-  return key;
+  return key as string;
 }
 
 /**
@@ -105,33 +82,30 @@ export async function configureAuth(): Promise<void> {
 
   if (existing) {
     const masked = existing.slice(0, 10) + '…';
-    console.log(`\n  Saved key: \x1b[2m${masked}\x1b[0m`);
-    const answer = await promptLine('  Replace it? [y/N] ');
-    if (answer.toLowerCase() !== 'y') {
-      console.log('  No changes made.\n');
+    clack.log.info(`Saved key: ${masked}`);
+    const replace = await clack.confirm({ message: 'Replace it?', initialValue: false });
+    if (clack.isCancel(replace) || !replace) {
+      clack.log.info('No changes made.');
       return;
     }
   } else {
-    console.log('\n  \x1b[1mConfigure OpenRouter API key\x1b[0m');
-    console.log('  Get a free key at \x1b[36mhttps://openrouter.ai/keys\x1b[0m\n');
+    clack.log.info('Get a free key at https://openrouter.ai/keys');
   }
 
-  const key = await promptHidden('  Paste your API key (input hidden): ');
-  if (!key) {
-    console.error('\n  No key entered.\n');
+  const key = await clack.password({ message: 'Paste your API key' });
+  if (clack.isCancel(key) || !key) {
+    clack.log.warn('No key entered.');
     return;
   }
 
-  process.stdout.write('  Validating key…');
-  const valid = await validateApiKey(key);
+  const spin = clack.spinner();
+  spin.start('Validating key');
+  const valid = await validateApiKey(key as string);
   if (!valid) {
-    process.stdout.write('\r\x1b[2K');
-    console.error('  \x1b[31m✗\x1b[0m  Key rejected by OpenRouter — check the key and try again.\n');
+    spin.stop('Key rejected by OpenRouter — check the key and try again.');
     return;
   }
-  process.stdout.write('\r\x1b[2K');
-
-  saveKey(key);
-  console.log(`  \x1b[32m✓\x1b[0m  Key valid and saved to \x1b[2m${CONFIG_FILE}\x1b[0m\n`);
+  saveKey(key as string);
+  spin.stop(`Key valid · saved to ${CONFIG_FILE}`);
   process.exit(0);
 }

@@ -520,7 +520,7 @@ program
 
 program
   .command('open')
-  .description('Re-open a previously generated site in the browser editor')
+  .description('Re-open a --preview generation in the browser editor (history is saved only for --preview runs, not scaffold)')
   .action(async () => {
     const entries = listHistory();
 

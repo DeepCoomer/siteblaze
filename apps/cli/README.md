@@ -56,7 +56,7 @@ siteblaze auth
 siteblaze list-models
 siteblaze list-models --refresh
 
-# Re-open a previously generated site in the browser editor
+# Re-open a --preview session (history is only saved for --preview, not scaffold)
 siteblaze open
 ```
 
@@ -65,7 +65,7 @@ siteblaze open
 | Flag | Description |
 |---|---|
 | `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
-| `siteblaze open` | Re-open a previously generated site without re-running AI |
+| `siteblaze open` | Re-open a `--preview` session without re-running AI (history saved for `--preview` only) |
 | `-m, --model <id>` | Force a specific OpenRouter model |
 | `-o, --output <path>` | Output directory (default: current dir) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |

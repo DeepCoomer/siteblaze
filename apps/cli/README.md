@@ -64,9 +64,7 @@ siteblaze open
 
 | Flag | Description |
 |---|---|
-| `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
-| `siteblaze open` | Re-open a `--preview` session without re-running AI (history saved for `--preview` only) |
-| `siteblaze open --delete` | Delete a history entry |
+| `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
 | `-m, --model <id>` | Force a specific OpenRouter model |
 | `-o, --output <path>` | Output directory (default: current dir) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
@@ -97,10 +95,11 @@ The editor opens automatically at `http://localhost:3000`. On the left you'll fi
 | Primary color | Color picker + hex input |
 | Secondary color | Color picker + hex input |
 | Theme toggle | Show/hide the theme switcher button on the page |
+| Sections | Add, delete, and reorder sections; hit ↻ on any section to AI-regenerate its content |
 
 The raw JSON is also editable in the panel for advanced changes to section content.
 
-Hit **Save** to apply changes to the live preview. Hit **↓ Download Project** to get a ready-to-run zip named after your site. Press `Ctrl+C` in the terminal to stop.
+Changes apply to the live preview automatically. Hit **↓ Download Project** to get a ready-to-run zip named after your site. Press `Ctrl+C` to stop — your session is saved and can be resumed with `siteblaze open`.
 
 ---
 

@@ -83,8 +83,9 @@ The editor opens at `http://localhost:3000` with a live page and a settings pane
 - **Font** — Sans-serif, Serif, or Monospace
 - **Colors** — primary and secondary with a color picker or hex input
 - **Theme toggle** — show/hide the theme switcher button on the page
+- **Sections** — reorder, delete, and add new sections; hit ↻ on any section to AI-fill it with fresh content
 
-Hit **Save** to apply changes to the live preview. Hit **↓ Download Project** to get a ready-to-run zip. Press `Ctrl+C` in the terminal to stop.
+Changes in the settings panel apply to the live preview automatically. Hit **↓ Download Project** to get a ready-to-run zip. Press `Ctrl+C` in the terminal to stop — your session is saved and can be resumed with `siteblaze open`.
 
 ---
 
@@ -109,7 +110,6 @@ Precedence: `SITEBLAZE_MODELS` env → `~/.config/siteblaze/models.json` → bui
 ## Coming soon
 
 - `siteblaze publish` — deploy to Vercel / Netlify in one command
-- Section editing in the browser — reorder, add, and remove sections visually
 - Multi-page support — generate full sites, not just landing pages
 - `@siteblaze/react` — use the component engine in your own Next.js / Remix app
 - CMS integration — pull content from Contentful / Sanity into the schema
@@ -133,6 +133,9 @@ npm install
 
 # Run tests
 npm exec nx run-many -- -t test --projects=@org/engine-core,@org/cli
+
+# Build web app (must run before CLI build)
+npm exec nx build @org/web -- --skip-nx-cache
 
 # Build CLI
 cd apps/cli && node build.mjs

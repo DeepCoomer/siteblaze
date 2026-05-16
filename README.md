@@ -47,6 +47,7 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 |---|---|
 | `siteblaze generate "<prompt>"` | Generate and scaffold a new site |
 | `siteblaze open` | Re-open a `--preview` session in the browser editor (history saved for `--preview` only) |
+| `siteblaze open --delete` | Delete a history entry |
 | `siteblaze auth` | Save your OpenRouter API key |
 | `siteblaze list-models` | Show active models and their source |
 | `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |

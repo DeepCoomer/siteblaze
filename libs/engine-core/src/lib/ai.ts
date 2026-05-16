@@ -77,7 +77,7 @@ Site category → section selection guide:
   portfolio → HERO, PORTFOLIO_GRID, CASE_STUDY, SKILLS, TIMELINE, TESTIMONIALS, GALLERY, CONTACT_FORM, CTA
   agency    → HERO, LOGO_CLOUD, FEATURES, CASE_STUDY, PORTFOLIO_GRID, TEAM, TESTIMONIALS, CTA
   saas      → HERO, FEATURES, STATS, PRICING, TESTIMONIALS, FAQ, NEWSLETTER, CTA
-  blog      → HERO, FEATURES, STATS, NEWSLETTER, CTA
+  blog      → HERO, FEATURES (what you write about), PORTFOLIO_GRID (featured / top posts — use post titles and excerpts as items), STATS (posts published, readers, etc.), TESTIMONIALS (reader quotes), NEWSLETTER, CTA
   ecommerce → HERO, TRUST_BADGES, PRODUCT_GRID, FEATURES, TESTIMONIALS, FAQ, NEWSLETTER, CTA
   event     → HERO, COUNTDOWN, SCHEDULE, FEATURES, TEAM, TESTIMONIALS, FAQ, CTA
 

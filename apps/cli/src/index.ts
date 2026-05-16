@@ -522,26 +522,39 @@ program
 program
   .command('open')
   .description('Re-open a --preview generation in the browser editor (history is saved only for --preview runs, not scaffold)')
-  .action(async () => {
+  .option('-d, --delete', 'Delete a history entry instead of opening it')
+  .action(async (opts: { delete?: boolean }) => {
     const entries = listHistory();
 
     if (entries.length === 0) {
-      clack.log.info('No history found. Run siteblaze generate to create your first site.');
+      clack.log.info('No history found. Run siteblaze generate --preview to create your first site.');
       return;
     }
 
     const choice = await clack.select({
-      message: 'Choose a generation to re-open',
+      message: opts.delete ? 'Choose a generation to delete' : 'Choose a generation to re-open',
       options: entries.map(e => ({
         value: e.path,
-        label: e.siteName,
-        hint: `${e.prompt.length > 50 ? e.prompt.slice(0, 50) + '…' : e.prompt} · ${new Date(e.savedAt).toLocaleDateString()}`,
+        label: `${e.siteName}  (${new Date(e.savedAt).toLocaleDateString()})`,
+        hint: e.prompt.length > 60 ? e.prompt.slice(0, 60) + '…' : e.prompt,
       })),
     });
 
     if (clack.isCancel(choice)) {
       clack.cancel('Cancelled.');
       process.exit(0);
+    }
+
+    if (opts.delete) {
+      const entry = entries.find(e => e.path === choice);
+      const confirm = await clack.confirm({
+        message: `Delete "${entry?.siteName}" from history?`,
+        initialValue: false,
+      });
+      if (clack.isCancel(confirm) || !confirm) { clack.cancel('Cancelled.'); process.exit(0); }
+      try { rmSync(choice as string); } catch { /* ignore */ }
+      clack.log.success('Deleted from history.');
+      return;
     }
 
     const config = loadHistoryConfig(choice as string);

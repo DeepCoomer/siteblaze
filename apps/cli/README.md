@@ -66,6 +66,7 @@ siteblaze open
 |---|---|
 | `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
 | `siteblaze open` | Re-open a `--preview` session without re-running AI (history saved for `--preview` only) |
+| `siteblaze open --delete` | Delete a history entry |
 | `-m, --model <id>` | Force a specific OpenRouter model |
 | `-o, --output <path>` | Output directory (default: current dir) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |

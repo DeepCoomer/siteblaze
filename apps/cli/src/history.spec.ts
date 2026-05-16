@@ -22,6 +22,18 @@ describe('saveToHistory', () => {
     expect(entries).toHaveLength(1);
   });
 
+  it('returns the path of the saved file', () => {
+    const path = saveToHistory(sampleConfig, 'Vault — fintech app', testDir);
+    expect(typeof path).toBe('string');
+    expect(path).toMatch(/\.json$/);
+    expect(require('fs').existsSync(path)).toBe(true);
+  });
+
+  it('returns undefined when the dir is not writable', () => {
+    const path = saveToHistory(sampleConfig, 'prompt', '/nonexistent/path/that/cannot/be/created/xyz');
+    expect(path).toBeUndefined();
+  });
+
   it('stores siteName, prompt, and savedAt on the entry', () => {
     saveToHistory(sampleConfig, 'Vault — fintech app', testDir);
     const [entry] = listHistory(testDir);
@@ -44,9 +56,6 @@ describe('saveToHistory', () => {
     expect(() => saveToHistory({}, 'bare prompt', testDir)).not.toThrow();
   });
 
-  it('does not throw when dir is not writable (best-effort)', () => {
-    expect(() => saveToHistory(sampleConfig, 'prompt', '/nonexistent/path/that/cannot/be/created/xyz')).not.toThrow();
-  });
 });
 
 // ---------------------------------------------------------------------------

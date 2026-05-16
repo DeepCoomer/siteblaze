@@ -11,6 +11,7 @@ import { findWorkspaceRoot } from './preview.js';
 import { startServer, isPublishedMode } from './server.js';
 import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
+import { saveToHistory, listHistory, loadHistoryConfig } from './history.js';
 import { generateHeroImage } from './images.js';
 import { resolveRaceModels, saveModels, loadSavedModelsInfo, fetchFreeModels } from './models.js';
 import { generateLandingPage, refinePrompt, FREE_MODELS, MODEL_NOTES, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
@@ -383,6 +384,8 @@ program
 
     printSummary(aiResult.config as SummaryConfig);
 
+    saveToHistory(aiResult.config, prompt);
+
     // ── Preview mode — open in browser, nothing written to disk yet ──────────
     if (opts.preview) {
       const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
@@ -512,6 +515,52 @@ program
         console.log(`  \x1b[2m~\x1b[0m  Git init skipped (git not available or not configured)\n`);
       }
     }
+  });
+
+// ── open ──────────────────────────────────────────────────────────────────────
+
+program
+  .command('open')
+  .description('Re-open a previously generated site in the browser editor')
+  .action(async () => {
+    const entries = listHistory();
+
+    if (entries.length === 0) {
+      clack.log.info('No history found. Run siteblaze generate to create your first site.');
+      return;
+    }
+
+    const choice = await clack.select({
+      message: 'Choose a generation to re-open',
+      options: entries.map(e => ({
+        value: e.path,
+        label: e.siteName,
+        hint: `${e.prompt.length > 50 ? e.prompt.slice(0, 50) + '…' : e.prompt} · ${new Date(e.savedAt).toLocaleDateString()}`,
+      })),
+    });
+
+    if (clack.isCancel(choice)) {
+      clack.cancel('Cancelled.');
+      process.exit(0);
+    }
+
+    const config = loadHistoryConfig(choice as string);
+    const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
+    mkdirSync(tempDir, { recursive: true });
+    const configPath = join(tempDir, 'config.json');
+    writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
+    console.log(`  \x1b[2mPress Ctrl+C to stop.\x1b[0m\n`);
+
+    const cleanup = () => {
+      try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
+      process.exit(0);
+    };
+    process.once('SIGINT', cleanup);
+    process.once('SIGTERM', cleanup);
+
+    startServer(configPath);
   });
 
 // ── list-models ───────────────────────────────────────────────────────────────

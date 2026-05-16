@@ -12,12 +12,10 @@ No browser. No subscription. No blank canvas. Just a complete, runnable React + 
 
 ## Why siteblaze?
 
-Tools like v0, Bolt, and Lovable are browser-based platforms. siteblaze is a developer CLI that runs in your terminal:
-
-- **One command** → fully scaffolded React project with real content and appropriate sections
-- **Free tier** — races multiple OpenRouter free models in parallel; first valid response wins
-- **You own every file** — no runtime dependency, no lock-in, no account required
-- **Schema-validated output** — consistent structure every run, not ad-hoc code generation
+- **AI picks the sections, not the code** — your prompt decides the layout, copy, colors, and section order. The component library is fixed and vetted; the AI fills the content
+- **One command** → fully scaffolded React project with real, prompt-specific content and appropriate sections
+- **Free tier** — races multiple OpenRouter free models in parallel; first valid response wins. No subscription, no account required
+- **You own every file** — plain git repo, no runtime dependency, no lock-in
 
 ---
 
@@ -57,6 +55,9 @@ siteblaze auth
 # See active models / refresh from OpenRouter
 siteblaze list-models
 siteblaze list-models --refresh
+
+# Re-open a previously generated site in the browser editor
+siteblaze open
 ```
 
 ### Flags
@@ -64,6 +65,7 @@ siteblaze list-models --refresh
 | Flag | Description |
 |---|---|
 | `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
+| `siteblaze open` | Re-open a previously generated site without re-running AI |
 | `-m, --model <id>` | Force a specific OpenRouter model |
 | `-o, --output <path>` | Output directory (default: current dir) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |

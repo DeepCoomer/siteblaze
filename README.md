@@ -14,12 +14,10 @@ No browser required. No subscription. Just your terminal, your API key, and a sc
 
 ## Why siteblaze
 
-Most AI site builders (v0, Bolt, Lovable) are browser-based, locked to their platform, and hand you a blob of code you can't easily evolve. siteblaze is different:
-
-- **Developer-native** — runs in your terminal, outputs a real project in your filesystem
-- **Schema-validated output** — the AI fills content, not code. The component library is fixed and tested
-- **Free models by default** — uses OpenRouter free-tier models; bring your own key, no subscription
-- **You own the output** — Vite or Next.js, Tailwind or shadcn/ui, plain git repo, no lock-in
+- **AI picks the sections, not the code** — your prompt decides what sections appear, what copy they contain, what colors fit. The component library is fixed and tested; the AI fills the content
+- **Developer-native** — runs in your terminal, outputs a real project in your filesystem. No accounts, no browser tabs, no platform lock-in
+- **Free models by default** — races multiple OpenRouter free-tier models in parallel; first valid response wins. Bring a paid key if you want, but you don't have to
+- **You own the output** — Vite or Next.js, Tailwind or shadcn/ui, plain git repo. `cd`, `npm install`, `npm run dev` — that's it
 
 ---
 
@@ -48,6 +46,7 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 | Command | Description |
 |---|---|
 | `siteblaze generate "<prompt>"` | Generate and scaffold a new site |
+| `siteblaze open` | Re-open a previously generated site in the browser editor |
 | `siteblaze auth` | Save your OpenRouter API key |
 | `siteblaze list-models` | Show active models and their source |
 | `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |

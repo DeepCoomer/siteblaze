@@ -13,7 +13,7 @@ const STORAGE_KEY = 'siteblaze:theme';
 type FetchState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ok'; config: unknown; defaultTheme: ThemeMode; enableThemeToggle: boolean };
+  | { status: 'ok'; config: unknown; defaultTheme: ThemeMode };
 
 type QuickMeta = {
   siteName: string;
@@ -418,6 +418,14 @@ export function App() {
     }
   });
 
+  // Sync document.title to site name whenever config changes
+  useEffect(() => {
+    if (state.status !== 'ok') return;
+    const cfg = liveConfig ?? state.config;
+    const siteName = (cfg as { metadata?: { siteName?: string } })?.metadata?.siteName;
+    if (siteName) document.title = siteName;
+  }, [state, liveConfig]);
+
   useEffect(() => {
     let cancelled = false;
     fetch(API_URL)
@@ -427,10 +435,9 @@ export function App() {
       })
       .then((config) => {
         if (cancelled) return;
-        const meta = (config as { metadata?: { themeMode?: string; enableThemeToggle?: boolean } })?.metadata;
+        const meta = (config as { metadata?: { themeMode?: string } })?.metadata;
         const defaultTheme = meta?.themeMode as ThemeMode ?? 'light';
-        const enableThemeToggle = meta?.enableThemeToggle ?? false;
-        setState({ status: 'ok', config, defaultTheme, enableThemeToggle });
+        setState({ status: 'ok', config, defaultTheme });
       })
       .catch((err: unknown) => {
         if (!cancelled) setState({ status: 'error', message: String(err) });
@@ -473,12 +480,23 @@ export function App() {
   const configThemeMeta = (effectiveConfig as { metadata?: { themeMode?: string } })?.metadata?.themeMode;
   const configTheme = (THEMES.includes(configThemeMeta as ThemeMode) ? configThemeMeta : state.defaultTheme) as ThemeMode;
   const effectiveTheme = themeOverride ?? configTheme;
+  const enableThemeToggle = (effectiveConfig as { metadata?: { enableThemeToggle?: boolean } })?.metadata?.enableThemeToggle ?? false;
+
+  function handleApply(next: unknown) {
+    // When user saves, let the config's theme take over — clear any manual override
+    const savedTheme = (next as { metadata?: { themeMode?: string } })?.metadata?.themeMode as ThemeMode;
+    if (savedTheme && THEMES.includes(savedTheme)) {
+      setThemeOverride(null);
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    }
+    setLiveConfig(next);
+  }
 
   return (
     <>
       <PageRenderer config={effectiveConfig} themeOverride={effectiveTheme} />
-      {state.enableThemeToggle && <ThemeToggle current={effectiveTheme} onCycle={cycleTheme} />}
-      <ConfigEditor config={effectiveConfig} onApply={setLiveConfig} />
+      {enableThemeToggle && <ThemeToggle current={effectiveTheme} onCycle={cycleTheme} />}
+      <ConfigEditor config={effectiveConfig} onApply={handleApply} />
     </>
   );
 }

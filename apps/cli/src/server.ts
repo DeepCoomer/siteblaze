@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer as createNetServer } from 'net';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -98,27 +99,32 @@ export function createApp(configPath: string, workspaceRoot: string | null = nul
   return app;
 }
 
-export function startServer(configPath: string, port = 3000): void {
+function findFreePort(start = 3000, max = 3020): Promise<number> {
+  return new Promise((resolve, reject) => {
+    if (start > max) { reject(new Error(`No free port found in range 3000–${max}`)); return; }
+    const probe = createNetServer();
+    probe.listen(start, '127.0.0.1');
+    probe.once('listening', () => probe.close(() => resolve(start)));
+    probe.once('error', () => findFreePort(start + 1, max).then(resolve, reject));
+  });
+}
+
+export async function startServer(configPath: string, basePort = 3000): Promise<void> {
+  let port: number;
+  try {
+    port = await findFreePort(basePort);
+  } catch (err) {
+    console.error(`\n${(err as Error).message}\n`);
+    process.exit(1);
+  }
+
   const app = createApp(configPath);
-
-  // ── Listen ─────────────────────────────────────────────────────────────────
-
-  const server = app.listen(port, () => {
+  app.listen(port, () => {
     const url = `http://localhost:${port}`;
     console.log(`\n  Preview  →  ${url}\n`);
     import('open')
       .then(({ default: open }) => open(url))
       .catch(() => { /* best-effort */ });
-  });
-
-  server.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`\nPort ${port} is already in use.`);
-      console.error(`Is a preview already running? Open http://localhost:${port}\n`);
-    } else {
-      console.error(`\nServer error: ${err.message}\n`);
-    }
-    process.exit(1);
   });
 }
 

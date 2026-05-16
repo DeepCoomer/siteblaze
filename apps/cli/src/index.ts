@@ -384,10 +384,9 @@ program
 
     printSummary(aiResult.config as SummaryConfig);
 
-    saveToHistory(aiResult.config, prompt);
-
     // ── Preview mode — open in browser, nothing written to disk yet ──────────
     if (opts.preview) {
+      saveToHistory(aiResult.config, prompt);
       const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
       mkdirSync(tempDir, { recursive: true });
       const configPath = join(tempDir, 'config.json');

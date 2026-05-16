@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
-import { createInterface } from 'readline';
+import * as clack from '@clack/prompts';
 import { join, dirname, resolve } from 'path';
 import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
@@ -36,24 +36,24 @@ function detectPackageManager(cwd: string): PkgManager {
   return 'npm';
 }
 
+function onCancel(): never {
+  clack.cancel('Cancelled.');
+  process.exit(0);
+}
+
 async function confirmPackageManager(cwd: string): Promise<PkgManager> {
   const detected = detectPackageManager(cwd);
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
-
-  const opts = PKG_MANAGERS.map((pm, i) => {
-    const marker = pm === detected ? ` \x1b[2m(detected)\x1b[0m` : '';
-    return `\x1b[36m${i + 1}\x1b[0m ${pm}${marker}`;
-  }).join('   ');
-
-  console.log(`  \x1b[2mPackage manager:\x1b[0m  ${opts}`);
-  const defaultIdx = PKG_MANAGERS.indexOf(detected) + 1;
-  const answer = await ask(`  Choose [1-4] — default ${detected}:  `);
-  rl.close();
-  console.log();
-
-  const idx = parseInt(answer.trim(), 10) - 1;
-  return (idx >= 0 && idx < PKG_MANAGERS.length) ? PKG_MANAGERS[idx] : detected;
+  const result = await clack.select({
+    message: 'Package manager',
+    options: PKG_MANAGERS.map(pm => ({
+      value: pm,
+      label: pm,
+      hint: pm === detected ? 'detected' : undefined,
+    })),
+    initialValue: detected,
+  });
+  if (clack.isCancel(result)) onCancel();
+  return result as PkgManager;
 }
 
 // Nullable — null when running as a published package outside the monorepo
@@ -182,36 +182,33 @@ const SITE_TYPE_DESC: Record<SiteType, string> = {
 };
 
 async function confirmSiteType(detected: string): Promise<string> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
-
   const knownDesc = SITE_TYPE_DESC[detected as SiteType];
-  const desc = knownDesc ? `\x1b[2m— ${knownDesc}\x1b[0m` : '';
-  console.log(`\n  Site type detected: \x1b[36m${detected}\x1b[0m  ${desc}`);
-  const answer = await ask('  Correct? [Y/n]  ');
-  const confirmed = answer.trim().toLowerCase() !== 'n';
+  const message = knownDesc ? `Site type: ${detected} — ${knownDesc}` : `Site type: ${detected}`;
 
-  if (confirmed) {
-    rl.close();
-    console.log();
-    return detected;
+  const confirmed = await clack.confirm({ message: `${message}. Correct?`, initialValue: true });
+  if (clack.isCancel(confirmed)) onCancel();
+  if (confirmed) return detected;
+
+  const pick = await clack.select({
+    message: 'Choose a site type',
+    options: [
+      ...SITE_TYPES.map(t => ({ value: t as string, label: t, hint: SITE_TYPE_DESC[t] })),
+      { value: '__custom__', label: 'Custom', hint: 'e.g. restaurant, gym, real estate' },
+    ],
+  });
+  if (clack.isCancel(pick)) onCancel();
+
+  if (pick === '__custom__') {
+    const custom = await clack.text({
+      message: 'Custom category',
+      placeholder: 'e.g. restaurant, gym, real estate',
+      validate: v => v?.trim() ? undefined : 'Please enter a category',
+    });
+    if (clack.isCancel(custom)) onCancel();
+    return (custom as string).trim().toLowerCase();
   }
 
-  console.log('\n  Preset types:\n');
-  SITE_TYPES.forEach((t, i) => {
-    console.log(`  \x1b[36m${i + 1}\x1b[0m  ${t.padEnd(12)} \x1b[2m${SITE_TYPE_DESC[t]}\x1b[0m`);
-  });
-  console.log(`\n  Or type a custom category (e.g. "restaurant", "real estate", "gym")`);
-
-  const pick = await ask('\n  Enter number or custom name:  ');
-  rl.close();
-  console.log();
-
-  const trimmed = pick.trim();
-  const idx = parseInt(trimmed, 10) - 1;
-  if (!isNaN(idx) && idx >= 0 && idx < SITE_TYPES.length) return SITE_TYPES[idx];
-  if (trimmed.length > 0) return trimmed.toLowerCase();
-  return detected;
+  return pick as string;
 }
 
 // ---------------------------------------------------------------------------
@@ -221,16 +218,18 @@ async function confirmSiteType(detected: string): Promise<string> {
 async function confirmTheme(explicit?: string): Promise<ThemeOverride | undefined> {
   if (explicit === 'light' || explicit === 'dark' || explicit === 'midnight') return explicit;
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
-
-  console.log(`  \x1b[2mTheme:\x1b[0m  \x1b[36m1\x1b[0m Light  \x1b[36m2\x1b[0m Dark  \x1b[36m3\x1b[0m Midnight`);
-  const answer = await ask('  Choose [1/2/3] — default AI picks:  ');
-  rl.close();
-  console.log();
-
-  const map: Record<string, ThemeOverride> = { '1': 'light', '2': 'dark', '3': 'midnight' };
-  return map[answer.trim()];
+  const result = await clack.select({
+    message: 'Theme',
+    options: [
+      { value: '__ai__',   label: 'AI picks',  hint: 'chosen based on your prompt' },
+      { value: 'light',    label: 'Light' },
+      { value: 'dark',     label: 'Dark' },
+      { value: 'midnight', label: 'Midnight' },
+    ],
+    initialValue: '__ai__',
+  });
+  if (clack.isCancel(result)) onCancel();
+  return result === '__ai__' ? undefined : result as ThemeOverride;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,16 +238,18 @@ async function confirmTheme(explicit?: string): Promise<ThemeOverride | undefine
 
 async function confirmFramework(explicit?: string): Promise<Framework> {
   if (explicit === 'nextjs' || explicit === 'next') return 'nextjs';
-  if (explicit === 'vite') return explicit;
+  if (explicit === 'vite') return 'vite';
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
-
-  console.log(`  \x1b[2mFramework:\x1b[0m  \x1b[36m1\x1b[0m Vite  \x1b[2m(SPA, fast dev server)\x1b[0m   \x1b[36m2\x1b[0m Next.js  \x1b[2m(SSR, file-based routing)\x1b[0m`);
-  const answer = await ask('  Choose [1/2] — default Vite:  ');
-  rl.close();
-  console.log();
-  return answer.trim() === '2' ? 'nextjs' : 'vite';
+  const result = await clack.select({
+    message: 'Framework',
+    options: [
+      { value: 'vite',   label: 'Vite',    hint: 'SPA · fast dev server' },
+      { value: 'nextjs', label: 'Next.js', hint: 'SSR · file-based routing' },
+    ],
+    initialValue: 'vite',
+  });
+  if (clack.isCancel(result)) onCancel();
+  return result as Framework;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,14 +259,16 @@ async function confirmFramework(explicit?: string): Promise<Framework> {
 async function confirmUiLib(explicit?: string): Promise<UiLib> {
   if (explicit === 'tailwind' || explicit === 'shadcn') return explicit;
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q: string) => new Promise<string>(res => rl.question(q, res));
-
-  console.log(`  \x1b[2mUI Library:\x1b[0m  \x1b[36m1\x1b[0m Default  \x1b[2m(plain Tailwind)\x1b[0m   \x1b[36m2\x1b[0m shadcn/ui  \x1b[2m(component library)\x1b[0m`);
-  const answer = await ask('  Choose [1/2] — default plain Tailwind:  ');
-  rl.close();
-  console.log();
-  return answer.trim() === '2' ? 'shadcn' : 'tailwind';
+  const result = await clack.select({
+    message: 'UI library',
+    options: [
+      { value: 'tailwind', label: 'Tailwind CSS', hint: 'plain utility classes' },
+      { value: 'shadcn',   label: 'shadcn/ui',    hint: 'component library' },
+    ],
+    initialValue: 'tailwind',
+  });
+  if (clack.isCancel(result)) onCancel();
+  return result as UiLib;
 }
 
 // ---------------------------------------------------------------------------
@@ -402,29 +405,26 @@ program
     const aiSlug = toKebab(aiResult.config.metadata.siteName);
     let projectSlug = aiSlug;
     if (!opts.yes) {
-      const rl = createInterface({ input: process.stdin, output: process.stdout });
-      const raw = await new Promise<string>(res => rl.question(
-        `  App name: \x1b[36m${aiSlug}\x1b[0m  \x1b[2m(sets folder + package.json name — Enter to confirm)\x1b[0m  `,
-        res
-      ));
-      rl.close();
-      console.log();
-      const trimmed = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const raw = await clack.text({
+        message: 'App name',
+        placeholder: aiSlug,
+        defaultValue: aiSlug,
+      });
+      if (clack.isCancel(raw)) onCancel();
+      const trimmed = (raw as string).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       if (trimmed) projectSlug = trimmed;
     }
 
     // Check for directory conflict before scaffolding — ask to overwrite
     const expectedDir = join(outputDir, projectSlug);
     if (existsSync(expectedDir)) {
-      const rl = createInterface({ input: process.stdin, output: process.stdout });
-      const answer = await new Promise<string>(res => rl.question(
-        `\n  \x1b[33m!\x1b[0m  Directory \x1b[1m${expectedDir.split('/').at(-1)}\x1b[0m already exists. Overwrite? [y/N]  `,
-        res
-      ));
-      rl.close();
-      console.log();
-      if (answer.trim().toLowerCase() !== 'y') {
-        console.log('  Aborted.\n');
+      const overwrite = await clack.confirm({
+        message: `Directory "${projectSlug}" already exists. Overwrite?`,
+        initialValue: false,
+      });
+      if (clack.isCancel(overwrite)) onCancel();
+      if (!overwrite) {
+        clack.cancel('Aborted.');
         process.exit(0);
       }
       rmSync(expectedDir, { recursive: true });
@@ -495,13 +495,12 @@ program
     // Git init
     let initGit = opts.yes;
     if (!opts.yes) {
-      const rl = createInterface({ input: process.stdin, output: process.stdout });
-      const answer = await new Promise<string>(res => rl.question(
-        `  Initialise a git repository? \x1b[2m[Y/n]\x1b[0m  `, res
-      ));
-      rl.close();
-      console.log();
-      initGit = answer.trim().toLowerCase() !== 'n';
+      const doGit = await clack.confirm({
+        message: 'Initialise a git repository?',
+        initialValue: true,
+      });
+      if (clack.isCancel(doGit)) onCancel();
+      initGit = doGit as boolean;
     }
     if (initGit) {
       try {

@@ -1,6 +1,6 @@
 # siteblaze
 
-**One prompt. AI-generated React starter. Free. Yours.**
+**AI picks sections, not code. Clean React. Free. Yours.**
 
 ```bash
 npx siteblaze generate "Syncly — a SaaS project tracker for remote teams"

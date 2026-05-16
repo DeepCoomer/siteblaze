@@ -276,7 +276,7 @@ const program = new Command();
 
 program
   .name('siteblaze')
-  .description('One prompt. AI-generated React starter. Free. Yours.')
+  .description('AI picks sections, not code. Clean React. Free. Yours.')
   .version(CLI_VERSION)
   .hook('preAction', printBanner);
 

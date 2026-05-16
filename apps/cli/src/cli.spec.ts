@@ -118,6 +118,18 @@ describe('siteblaze list-models', () => {
 });
 
 // ---------------------------------------------------------------------------
+// generate — missing prompt
+// ---------------------------------------------------------------------------
+
+describe('siteblaze generate — missing prompt', () => {
+  it('exits non-zero and reports an error when no prompt is supplied', () => {
+    const { status, stderr } = run('generate');
+    expect(status).not.toBe(0);
+    expect(stderr.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // open — no history
 // ---------------------------------------------------------------------------
 

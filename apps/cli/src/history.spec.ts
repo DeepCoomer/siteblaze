@@ -91,4 +91,8 @@ describe('loadHistoryConfig', () => {
     const loaded = loadHistoryConfig(entry.path);
     expect(loaded).toEqual(sampleConfig);
   });
+
+  it('throws when the file does not exist', () => {
+    expect(() => loadHistoryConfig('/nonexistent/no-such-file.json')).toThrow();
+  });
 });

@@ -49,7 +49,7 @@ siteblaze generate "Alex Rivera — freelance designer portfolio" --framework ne
 # Use your own paid OpenRouter model
 SITEBLAZE_MODELS=anthropic/claude-opus-4 siteblaze generate "..."
 
-# Save API key for future runs
+# Save API key — also auto-caches the latest free model list
 siteblaze auth
 
 # See active models / refresh from OpenRouter
@@ -66,7 +66,7 @@ siteblaze open
 |---|---|
 | `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
 | `-m, --model <id>` | Force a specific OpenRouter model |
-| `-o, --output <path>` | Output directory (default: current dir) |
+| `-o, --output <path>` | Scaffold directly into this path (the path IS the destination — `--output ./my-app` creates `./my-app/`, not `./my-app/<slug>/`) |
 | `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
 | `-f, --framework <fw>` | `vite` (default) or `next` |
 | `--theme <mode>` | `light` `dark` `midnight` |
@@ -139,10 +139,10 @@ Each section has 3 layout variants and is fully theme-reactive.
 
 ## Model configuration
 
-By default siteblaze races a curated list of free OpenRouter models — first valid response wins.
+By default siteblaze races a curated list of free OpenRouter models — first valid response wins. The model list is fetched and cached automatically when you run `siteblaze auth`. To refresh it later:
 
 ```bash
-# Refresh the model list from OpenRouter (fixes deprecated models)
+# Re-fetch the model list from OpenRouter (fixes deprecated models)
 siteblaze list-models --refresh
 
 # Use specific models (comma-separated)

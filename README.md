@@ -41,33 +41,6 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 
 ---
 
-## Commands
-
-| Command | Description |
-|---|---|
-| `siteblaze generate "<prompt>"` | Generate and scaffold a new site |
-| `siteblaze open` | Re-open a `--preview` session in the browser editor (history saved for `--preview` only) |
-| `siteblaze open --delete` | Delete a history entry |
-| `siteblaze auth` | Save your OpenRouter API key |
-| `siteblaze list-models` | Show active models and their source |
-| `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |
-| `siteblaze --version` | Print version |
-
-### Generate flags
-
-| Flag | Description |
-|---|---|
-| `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
-| `--framework <vite\|next>` | Override framework (prompted if omitted) |
-| `--ui <tailwind\|shadcn>` | Override UI library (prompted if omitted) |
-| `--theme <light\|dark\|midnight>` | Set theme mode |
-| `--type <type>` | Site type: `landing` `portfolio` `saas` `agency` `blog` `ecommerce` `event` |
-| `--no-image` | Skip AI hero image generation |
-| `-y, --yes` | Auto-confirm all prompts, use defaults |
-| `--verbose` | Show model racing output |
-
----
-
 ## Preview mode
 
 Add `--preview` to open a browser editor before any files are written to disk:
@@ -89,6 +62,33 @@ Changes in the settings panel apply to the live preview automatically. Hit **↓
 
 ---
 
+## Commands
+
+| Command | Description |
+|---|---|
+| `siteblaze generate "<prompt>"` | Generate and scaffold a new site |
+| `siteblaze open` | Re-open a `--preview` session in the browser editor (history saved for `--preview` only) |
+| `siteblaze open --delete` | Delete a history entry |
+| `siteblaze auth` | Save your OpenRouter API key — also caches the latest free model list |
+| `siteblaze list-models` | Show active models and their source |
+| `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |
+| `siteblaze --version` | Print version |
+
+### Generate flags
+
+| Flag | Description |
+|---|---|
+| `--preview` | Open a live browser editor — tweak theme, colors, fonts, then download |
+| `--framework <vite\|next>` | Override framework (prompted if omitted) |
+| `--ui <tailwind\|shadcn>` | Override UI library (prompted if omitted) |
+| `--theme <light\|dark\|midnight>` | Set theme mode |
+| `--type <type>` | Site type: `landing` `portfolio` `saas` `agency` `blog` `ecommerce` `event` |
+| `--no-image` | Skip AI hero image generation |
+| `-y, --yes` | Auto-confirm all prompts, use defaults |
+| `--verbose` | Show model racing output |
+
+---
+
 ## Model configuration
 
 siteblaze races multiple free OpenRouter models and uses the first valid response — so you always get a result even if one model is slow or down.
@@ -98,7 +98,8 @@ siteblaze races multiple free OpenRouter models and uses the first valid respons
 SITEBLAZE_MODELS=anthropic/claude-opus-4 siteblaze generate "..."
 ```
 
-**Refresh free model list:**
+The model list is populated automatically when you run `siteblaze auth`. To refresh it later (e.g. after models are deprecated):
+
 ```bash
 siteblaze list-models --refresh
 ```

@@ -93,6 +93,11 @@ describe('siteblaze generate --help', () => {
     expect(stdout).toContain('saas');
     expect(stdout).toContain('portfolio');
   });
+
+  it('documents --output with destination semantics', () => {
+    expect(stdout).toContain('--output');
+    expect(stdout).toContain('destination');
+  });
 });
 
 // ---------------------------------------------------------------------------

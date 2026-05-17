@@ -21,3 +21,10 @@
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+## Pre-commit checklist
+
+Before committing any change, always audit these two things:
+
+1. **README files** — check `README.md` (root) and `apps/cli/README.md`. If the change adds a flag, command, behavior, or user-facing feature, update the relevant README section. If it removes something, remove it from the README too.
+2. **Tests** — check `apps/cli/src/cli.spec.ts` and any relevant unit tests in `libs/engine-core/src`. If the change adds or modifies CLI flags, commands, or public API behavior, add or update the corresponding test. Do not commit code that introduces new user-facing behavior without test coverage.

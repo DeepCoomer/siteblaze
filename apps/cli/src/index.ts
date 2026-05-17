@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 import * as clack from '@clack/prompts';
-import { join, dirname, resolve } from 'path';
+import { join, dirname, basename, resolve } from 'path';
 import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
@@ -283,7 +283,17 @@ program
   .description('AI picks sections, not code. Clean React. Free. Yours.')
   .version(CLI_VERSION)
   .hook('preAction', printBanner)
-  .addHelpText('after', '\nRun siteblaze generate --help to see all flags (--preview, --framework, --ui, --theme, --yes, --type, and more).');
+  .addHelpText('after', '\nRun siteblaze generate --help to see all flags (--preview, --framework, --ui, --theme, --yes, --type, and more).')
+  .configureOutput({
+    outputError: (str, write) => {
+      write(str);
+      if (str.includes("missing required argument 'prompt'")) {
+        write('\nExamples:\n');
+        write('  siteblaze generate "SaaS landing page for a project management tool"\n');
+        write('  siteblaze generate "Portfolio for a UX designer" --preview\n\n');
+      }
+    },
+  });
 
 
 // ── generate ─────────────────────────────────────────────────────────────────
@@ -292,7 +302,7 @@ program
   .command('generate <prompt>')
   .description('Generate a complete React + Tailwind project from a text prompt using AI')
   .option('-m, --model <model>', 'Specific OpenRouter model ID (omit to race all free models)')
-  .option('-o, --output <path>', 'Directory to create the project in (default: current directory)')
+  .option('-o, --output <path>', 'Scaffold directly into this path — the path IS the destination, not a parent folder')
   .option('-t, --type <type>', 'Site type: landing | portfolio | agency | saas | blog | ecommerce | event (auto-detected if omitted)')
   .option('-f, --framework <fw>', 'Output framework: vite | next (prompted if omitted)')
   .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
@@ -302,7 +312,11 @@ program
   .option('--verbose', 'Show model details and internal progress')
   .option('--preview', 'Open in browser preview instead of scaffolding to disk — edit and download from the UI')
   .action(async (prompt: string, opts: { model?: string; output?: string; type?: string; framework?: string; theme?: string; ui?: string; image: boolean; yes?: boolean; verbose?: boolean; preview?: boolean }) => {
-    const outputDir = opts.output ? resolve(opts.output) : process.cwd();
+    // --output path IS the destination directory (create-next-app convention).
+    // No --output → create an ai-slug subfolder inside cwd (unchanged).
+    const isExplicitOutput = !!opts.output;
+    const resolvedOutput = opts.output ? resolve(opts.output) : null;
+    const outputDir = resolvedOutput ? dirname(resolvedOutput) : process.cwd();
 
     const apiKey = await resolveApiKey(loadEnvKey(process.cwd(), 'OPENROUTER_API_KEY'));
 
@@ -338,7 +352,7 @@ program
     if (prompt.trim().split(/\s+/).length < 12) {
       const refineSpinner = startSpinner('Expanding prompt');
       try {
-        refinedPrompt = await refinePrompt(prompt, apiKey);
+        refinedPrompt = await refinePrompt(prompt, apiKey, raceModels);
         refineSpinner.stop(
           refinedPrompt !== prompt
             ? `\x1b[32m✓\x1b[0m  Prompt expanded`
@@ -413,10 +427,12 @@ program
       return;
     }
 
-    // Project name confirmation
+    // Project name: derived from --output basename when explicit, otherwise AI slug with optional prompt
     const aiSlug = toKebab(aiResult.config.metadata.siteName);
-    let projectSlug = aiSlug;
-    if (!opts.yes) {
+    let projectSlug = isExplicitOutput
+      ? (toKebab(basename(resolvedOutput!)) || aiSlug)
+      : aiSlug;
+    if (!isExplicitOutput && !opts.yes) {
       const raw = await clack.text({
         message: 'App name',
         placeholder: aiSlug,

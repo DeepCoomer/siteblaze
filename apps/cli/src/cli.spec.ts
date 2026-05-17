@@ -83,7 +83,7 @@ describe('siteblaze generate --help', () => {
     expect(stdout).toContain('--ui');
     expect(stdout).toContain('--theme');
     expect(stdout).toContain('--yes');
-    expect(stdout).toContain('--no-image');
+    expect(stdout).toContain('--model');
     expect(stdout).toContain('--verbose');
   });
 

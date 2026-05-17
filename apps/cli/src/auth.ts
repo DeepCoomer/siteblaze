@@ -1,5 +1,5 @@
 import * as clack from '@clack/prompts';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { fetchFreeModels, saveModels } from './models.js';

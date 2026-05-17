@@ -392,7 +392,7 @@ async function callModel(
     });
   } catch (err) {
     const isAbort = (err as Error).name === 'AbortError';
-    throw new Error(isAbort ? `${model}: aborted or timed out` : String(err));
+    throw new Error(isAbort ? `${model}: aborted or timed out` : String(err), { cause: err });
   } finally {
     clearTimeout(timeout);
   }
@@ -529,7 +529,7 @@ async function generateRace(
       err instanceof AggregateError
         ? err.errors.map((e: Error) => e.message).join('\n')
         : String(err);
-    throw new Error(`All models failed:\n${errors}`);
+    throw new Error(`All models failed:\n${errors}`, { cause: err });
   }
 }
 
@@ -672,6 +672,6 @@ export async function fillSectionContent(
     const errors = err instanceof AggregateError
       ? err.errors.map((e: Error) => e.message).join('\n')
       : String(err);
-    throw new Error(`All models failed to fill section:\n${errors}`);
+    throw new Error(`All models failed to fill section:\n${errors}`, { cause: err });
   }
 }

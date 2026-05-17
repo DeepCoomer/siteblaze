@@ -56,13 +56,15 @@ export function Hero({ content, variant, theme }: HeroProps) {
           </div>
 
           <div
-            className="hidden min-h-[500px] items-center justify-center overflow-hidden lg:flex"
+            className="relative hidden min-h-[500px] overflow-hidden lg:block"
             style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${SECONDARY})` }}
           >
             {imageUrl ? (
-              <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+              <img src={imageUrl} alt={title} className="absolute inset-0 h-full w-full object-cover" />
             ) : (
-              <span className="text-9xl opacity-20 select-none">✦</span>
+              <div className="flex h-full min-h-[500px] items-center justify-center">
+                <span className="text-9xl opacity-20 select-none">✦</span>
+              </div>
             )}
           </div>
         </section>

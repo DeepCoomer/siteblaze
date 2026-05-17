@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DeepCoomer/siteblaze/main/assets/logo-500.png" alt="siteblaze" width="220" />
+</p>
+
 # siteblaze
 
 **AI picks sections, not code. Clean React. Free. Yours.**
@@ -83,7 +87,7 @@ Changes in the settings panel apply to the live preview automatically. Hit **↓
 | `--ui <tailwind\|shadcn>` | Override UI library (prompted if omitted) |
 | `--theme <light\|dark\|midnight>` | Set theme mode |
 | `--type <type>` | Site type: `landing` `portfolio` `saas` `agency` `blog` `ecommerce` `event` |
-| `--no-image` | Skip AI hero image generation |
+| `--image` | Generate an AI hero image via Pollination AI (default: static placeholder) |
 | `-y, --yes` | Auto-confirm all prompts, use defaults |
 | `--verbose` | Show model racing output |
 

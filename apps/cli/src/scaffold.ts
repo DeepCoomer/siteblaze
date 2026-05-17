@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -709,7 +709,7 @@ export default nextConfig;
         dev: 'next dev',
         build: 'next build',
         start: 'next start',
-        lint: 'next lint',
+        lint: 'eslint .',
       },
       dependencies: {
         next: '^15.0.0',
@@ -731,9 +731,35 @@ export default nextConfig;
         tailwindcss: '^3.4.0',
         autoprefixer: '^10.4.0',
         postcss: '^8.4.0',
+        eslint: '^9.0.0',
+        'eslint-config-next': '^15.0.0',
+        '@eslint/eslintrc': '^3.0.0',
         ...(uiLib === 'shadcn' ? { 'tailwindcss-animate': '^1.0.7' } : {}),
       },
     }, null, 2));
+
+    writeFileSync(join(projectDir, 'eslint.config.mjs'), `import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { FlatCompat } from '@eslint/eslintrc';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const compat = new FlatCompat({ baseDirectory: __dirname });
+
+const eslintConfig = [
+  { ignores: ['.next', 'src/components/ui/**'] },
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  {
+    rules: {
+      'react/no-unescaped-entities': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+];
+
+export default eslintConfig;
+`);
 
     writeFileSync(join(projectDir, 'tsconfig.json'), JSON.stringify({
       compilerOptions: {
@@ -794,6 +820,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <title>${config.metadata.siteName}</title>
   </head>
   <body>
@@ -812,6 +839,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         dev: 'vite',
         build: 'tsc && vite build',
         preview: 'vite preview',
+        lint: 'eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0',
       },
       dependencies: {
         react: '^19.0.0',
@@ -831,11 +859,45 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         tailwindcss: '^3.4.0',
         autoprefixer: '^10.4.0',
         postcss: '^8.4.0',
+        eslint: '^9.9.0',
+        '@eslint/js': '^9.9.0',
+        globals: '^15.9.0',
+        'typescript-eslint': '^8.0.1',
+        'eslint-plugin-react-hooks': '^5.1.0',
+        'eslint-plugin-react-refresh': '^0.4.9',
         ...(uiLib === 'shadcn' ? { 'tailwindcss-animate': '^1.0.7' } : {}),
         '@types/react': '^19.0.0',
         '@types/react-dom': '^19.0.0',
       },
     }, null, 2));
+
+    writeFileSync(join(projectDir, 'eslint.config.js'), `import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['dist', 'src/components/ui/**'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      '@typescript-eslint/no-empty-object-type': 'off',
+    },
+  },
+);
+`);
 
     writeFileSync(join(projectDir, 'tsconfig.json'), JSON.stringify({
       compilerOptions: {
@@ -897,6 +959,16 @@ dist
 .env.local
 `);
 
+  const faviconSrc = join(__dirname, '../public/favicon.ico');
+  if (existsSync(faviconSrc)) {
+    copyFileSync(faviconSrc, join(projectDir, 'public', 'favicon.ico'));
+  }
+
+  const placeholderSrc = join(__dirname, '../public/images/placeholder.png');
+  if (existsSync(placeholderSrc)) {
+    copyFileSync(placeholderSrc, join(projectDir, 'public', 'images', 'placeholder.png'));
+  }
+
   const editPath = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
   const sectionList = usedTypes.map(t => `- ${t}`).join('\n');
   writeFileSync(join(projectDir, 'README.md'), `# ${config.metadata.siteName}
@@ -931,11 +1003,6 @@ Each section accepts \`content\`, \`variant\`, and \`theme\` props.
   return projectDir;
 }
 
-/**
- * Overwrites src/Home.tsx with a new version that includes the hero
- * image URL. Called after the image has been downloaded and placed in
- * public/images/hero.jpg.
- */
 export function rewriteHome(
   projectDir: string,
   config: ScaffoldConfig,

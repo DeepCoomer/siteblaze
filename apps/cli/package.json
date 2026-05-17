@@ -1,6 +1,6 @@
 {
   "name": "siteblaze",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "AI picks sections, not code. Clean React. Free. Yours.",
   "type": "module",
   "bin": {
@@ -10,6 +10,7 @@
     "dist",
     "web",
     "templates",
+    "public",
     "README.md"
   ],
   "engines": {

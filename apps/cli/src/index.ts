@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 import * as clack from '@clack/prompts';
 import { join, dirname, basename, resolve } from 'path';
@@ -8,13 +8,12 @@ import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
 import { findWorkspaceRoot } from './preview.js';
-import { startServer, isPublishedMode } from './server.js';
+import { startServer } from './server.js';
 import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { saveToHistory, listHistory, loadHistoryConfig } from './history.js';
-import { generateHeroImage } from './images.js';
 import { resolveRaceModels, saveModels, loadSavedModelsInfo, fetchFreeModels } from './models.js';
-import { generateLandingPage, refinePrompt, FREE_MODELS, MODEL_NOTES, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
+import { generateLandingPage, refinePrompt, MODEL_NOTES, type SiteType, type ThemeOverride, type LandingPage, extractCategoryHint } from '@org/engine-core';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -276,6 +275,18 @@ async function confirmUiLib(explicit?: string): Promise<UiLib> {
 // CLI
 // ---------------------------------------------------------------------------
 
+function injectPlaceholder(config: LandingPage): LandingPage {
+  return {
+    ...config,
+    sections: config.sections.map(s => {
+      if (s.type !== 'HERO') return s;
+      const c = s.content as { title: string; subtitle: string; ctaText: string; imageUrl?: string };
+      if (c.imageUrl) return s;
+      return { ...s, content: { ...c, imageUrl: '/images/placeholder.png' } };
+    }) as LandingPage['sections'],
+  };
+}
+
 const program = new Command();
 
 program
@@ -307,7 +318,6 @@ program
   .option('-f, --framework <fw>', 'Output framework: vite | next (prompted if omitted)')
   .option('--theme <theme>', 'Theme mode: light | dark | midnight (prompted if omitted)')
   .option('--ui <lib>', 'UI library: tailwind | shadcn (prompted if omitted)')
-  .option('--no-image', 'Skip hero image generation')
   .option('-y, --yes', 'Skip all prompts and use defaults (vite, tailwind, npm, AI picks theme and name)')
   .option('--verbose', 'Show model details and internal progress')
   .option('--preview', 'Open in browser preview instead of scaffolding to disk — edit and download from the UI')
@@ -365,16 +375,9 @@ program
 
     const spinner = startSpinner('Generating your site');
 
-    // Run AI + image generation truly in parallel
-    // Image gen uses raw prompt (concrete nouns work better for visual models)
-    // AI generation uses the refined prompt
     let aiResult: Awaited<ReturnType<typeof generateLandingPage>>;
-    let tmpImagePath: string | null;
     try {
-      [tmpImagePath, aiResult] = await Promise.all([
-        opts.image ? generateHeroImage(prompt) : Promise.resolve(null),
-        generateLandingPage(refinedPrompt, { apiKey, model: opts.model, models: raceModels, siteType, themeMode }),
-      ]);
+      aiResult = await generateLandingPage(refinedPrompt, { apiKey, model: opts.model, models: raceModels, siteType, themeMode });
     } catch (err) {
       spinner.stop('\x1b[31m✗\x1b[0m  Generation failed');
       const msg = String(err);
@@ -405,7 +408,8 @@ program
       const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
       mkdirSync(tempDir, { recursive: true });
       const configPath = join(tempDir, 'config.json');
-      writeFileSync(configPath, JSON.stringify(aiResult.config, null, 2));
+      const previewConfig = injectPlaceholder(aiResult.config as LandingPage);
+      writeFileSync(configPath, JSON.stringify(previewConfig, null, 2));
       console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
       console.log(`  \x1b[2mSession saved — run \x1b[0msiteblaze open\x1b[2m later to reopen. Press Ctrl+C to stop.\x1b[0m\n`);
       const cleanupPreview = () => {
@@ -484,28 +488,15 @@ program
       process.exit(1);
     }
 
-    // Copy temp image into the scaffolded project, then patch LandingPage.tsx
-    if (tmpImagePath) {
-      try {
-        const destDir = join(finalProjectDir, 'public', 'images');
-        mkdirSync(destDir, { recursive: true });
-        copyFileSync(tmpImagePath, join(destDir, 'hero.jpg'));
-        rewriteHome(
-          finalProjectDir,
-          aiResult.config as Parameters<typeof rewriteHome>[1],
-          '/images/hero.jpg',
-          framework,
-          uiLib
-        );
-        console.log(`  \x1b[32m✓\x1b[0m  Hero image ready`);
-      } catch {
-        console.log(`  \x1b[2m~\x1b[0m  Hero image skipped`);
-      } finally {
-        rmSync(tmpImagePath, { force: true });
-      }
-    } else {
-      console.log(`  \x1b[2m~\x1b[0m  Hero image skipped (using placeholder)`);
-    }
+    try {
+      rewriteHome(
+        finalProjectDir,
+        aiResult.config as Parameters<typeof rewriteHome>[1],
+        '/images/placeholder.png',
+        framework,
+        uiLib
+      );
+    } catch { /* no hero section — nothing to patch */ }
 
     const folderName  = finalProjectDir.split('/').at(-1) ?? finalProjectDir;
     const editPath    = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
@@ -582,11 +573,11 @@ program
       return;
     }
 
-    const config = loadHistoryConfig(choice as string);
+    const config = loadHistoryConfig(choice as string) as LandingPage;
     const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
     mkdirSync(tempDir, { recursive: true });
     const configPath = join(tempDir, 'config.json');
-    writeFileSync(configPath, JSON.stringify(config, null, 2));
+    writeFileSync(configPath, JSON.stringify(injectPlaceholder(config), null, 2));
 
     console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
     console.log(`  \x1b[2mPress Ctrl+C to stop.\x1b[0m\n`);

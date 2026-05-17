@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DeepCoomer/siteblaze/main/assets/logo-500.png" alt="siteblaze" width="220" />
+</p>
+
 # siteblaze
 
 **AI picks sections, not code. Clean React. Free. Yours.**
@@ -60,23 +64,6 @@ siteblaze list-models --refresh
 siteblaze open
 ```
 
-### Flags
-
-| Flag | Description |
-|---|---|
-| `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
-| `-m, --model <id>` | Force a specific OpenRouter model |
-| `-o, --output <path>` | Scaffold directly into this path (the path IS the destination — `--output ./my-app` creates `./my-app/`, not `./my-app/<slug>/`) |
-| `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
-| `-f, --framework <fw>` | `vite` (default) or `next` |
-| `--theme <mode>` | `light` `dark` `midnight` |
-| `--ui <lib>` | `tailwind` (default) or `shadcn` |
-| `--no-image` | Skip AI hero image generation |
-| `-y, --yes` | Skip all prompts, use defaults |
-| `--verbose` | Show model details and generation source |
-
----
-
 ## Preview mode
 
 Add `--preview` to open a browser editor before any files are written to disk:
@@ -103,6 +90,23 @@ Changes apply to the live preview automatically. Hit **↓ Download Project** to
 
 ---
 
+### Flags
+
+| Flag | Description |
+|---|---|
+| `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
+| `-m, --model <id>` | Force a specific OpenRouter model |
+| `-o, --output <path>` | Scaffold directly into this path (the path IS the destination — `--output ./my-app` creates `./my-app/`, not `./my-app/<slug>/`) |
+| `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
+| `-f, --framework <fw>` | `vite` (default) or `next` |
+| `--theme <mode>` | `light` `dark` `midnight` |
+| `--ui <lib>` | `tailwind` (default) or `shadcn` |
+| `--image` | Generate an AI hero image via Pollination AI (default: static placeholder) |
+| `-y, --yes` | Skip all prompts, use defaults |
+| `--verbose` | Show model details and generation source |
+
+---
+
 ## What gets generated
 
 ```
@@ -112,7 +116,7 @@ my-project/
 │   ├── sections/         ← individual section components
 │   └── theme.ts          ← colors, fonts, theme mode
 ├── public/
-│   └── images/hero.jpg   ← AI-generated hero image
+│   └── images/placeholder.png  ← swap with your own image
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.js

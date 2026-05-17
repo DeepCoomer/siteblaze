@@ -60,5 +60,13 @@ docs/
 .env
 .env.local
 
+# Assets — source logos committed, generated outputs are derived
+assets/favicon-16.png
+assets/favicon-32.png
+assets/logo-500.png
+assets/logo-white-500.png
+assets/apple-touch-icon.png
+assets/favicon.ico
+
 # Generated projects (from siteblaze generate run inside the repo during dev/testing)
 vault-secure-digital-vault/

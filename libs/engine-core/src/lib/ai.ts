@@ -545,7 +545,7 @@ async function generateRace(
 export async function refinePrompt(
   raw: string,
   apiKey: string,
-  models: string[] = FREE_MODELS,
+  models: readonly string[] = FREE_MODELS,
 ): Promise<string> {
   const messages: Message[] = [
     { role: 'system', content: REFINE_SYSTEM_PROMPT },

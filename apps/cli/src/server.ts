@@ -1,7 +1,7 @@
 import express from 'express';
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
@@ -101,7 +101,7 @@ export function createApp(configPath: string, workspaceRoot: string | null = nul
       return;
     }
 
-    const folderName = projectDir.split('/').at(-1) ?? 'siteblaze-project';
+    const folderName = basename(projectDir) || 'siteblaze-project';
 
     let zipBuffer: Buffer;
     try {

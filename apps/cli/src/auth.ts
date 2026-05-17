@@ -2,6 +2,7 @@ import * as clack from '@clack/prompts';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { fetchFreeModels, saveModels } from './models.js';
 
 const CONFIG_DIR  = join(homedir(), '.config', 'siteblaze');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
@@ -78,6 +79,7 @@ export async function resolveApiKey(fromEnv: string | undefined): Promise<string
   if (save) {
     saveKey(key as string);
     clack.log.success('Key saved.');
+    fetchFreeModels(key as string).then(models => saveModels(models)).catch(() => {});
   }
 
   return key as string;
@@ -115,6 +117,13 @@ export async function configureAuth(): Promise<void> {
     return;
   }
   saveKey(key as string);
-  spin.stop(`Key valid · saved to ${CONFIG_FILE}`);
+  spin.message('Fetching latest model list…');
+  try {
+    const models = await fetchFreeModels(key as string);
+    saveModels(models);
+    spin.stop(`Key saved · ${models.length} free models cached`);
+  } catch {
+    spin.stop(`Key valid · saved to ${CONFIG_FILE}`);
+  }
   process.exit(0);
 }

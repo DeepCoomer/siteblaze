@@ -342,7 +342,7 @@ program
     if (prompt.trim().split(/\s+/).length < 12) {
       const refineSpinner = startSpinner('Expanding prompt');
       try {
-        refinedPrompt = await refinePrompt(prompt, apiKey);
+        refinedPrompt = await refinePrompt(prompt, apiKey, raceModels);
         refineSpinner.stop(
           refinedPrompt !== prompt
             ? `\x1b[32m✓\x1b[0m  Prompt expanded`

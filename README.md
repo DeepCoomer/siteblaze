@@ -48,7 +48,7 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 | `siteblaze generate "<prompt>"` | Generate and scaffold a new site |
 | `siteblaze open` | Re-open a `--preview` session in the browser editor (history saved for `--preview` only) |
 | `siteblaze open --delete` | Delete a history entry |
-| `siteblaze auth` | Save your OpenRouter API key |
+| `siteblaze auth` | Save your OpenRouter API key — also caches the latest free model list |
 | `siteblaze list-models` | Show active models and their source |
 | `siteblaze list-models --refresh` | Fetch latest free models from OpenRouter |
 | `siteblaze --version` | Print version |
@@ -98,7 +98,8 @@ siteblaze races multiple free OpenRouter models and uses the first valid respons
 SITEBLAZE_MODELS=anthropic/claude-opus-4 siteblaze generate "..."
 ```
 
-**Refresh free model list:**
+The model list is populated automatically when you run `siteblaze auth`. To refresh it later (e.g. after models are deprecated):
+
 ```bash
 siteblaze list-models --refresh
 ```

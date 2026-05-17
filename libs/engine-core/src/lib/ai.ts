@@ -32,8 +32,6 @@ export const MODEL_NOTES: Record<string, string> = {
   'nvidia/nemotron-3-super-120b-a12b:free':       'slow (60-90s), reliable fallback',
 };
 
-// Prompt refinement — nemotron-nano confirmed fastest (0.8s) with high output quality
-const REFINE_MODEL = 'nvidia/nemotron-3-nano-30b-a3b:free';
 
 // ---------------------------------------------------------------------------
 // System prompts
@@ -547,16 +545,17 @@ async function generateRace(
 export async function refinePrompt(
   raw: string,
   apiKey: string,
+  models: string[] = FREE_MODELS,
 ): Promise<string> {
+  const messages: Message[] = [
+    { role: 'system', content: REFINE_SYSTEM_PROMPT },
+    { role: 'user', content: raw },
+  ];
   try {
-    const refined = await callModel(
-      [
-        { role: 'system', content: REFINE_SYSTEM_PROMPT },
-        { role: 'user', content: raw },
-      ],
-      apiKey,
-      REFINE_MODEL,
-      AbortSignal.timeout(10_000),
+    const refined = await Promise.any(
+      models.map(model =>
+        callModel(messages, apiKey, model, AbortSignal.timeout(10_000))
+      )
     );
     return refined.trim() || raw;
   } catch {

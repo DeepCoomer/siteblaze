@@ -1,2 +1,3 @@
+npm run lint
 cd apps/cli && npx tsc --noEmit --skipLibCheck && cd ../..
 cd libs/engine-core && npx tsc --noEmit --skipLibCheck && cd ../..

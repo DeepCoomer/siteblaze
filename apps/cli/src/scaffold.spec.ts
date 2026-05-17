@@ -147,6 +147,19 @@ describe('scaffoldProject — Vite (default)', () => {
   it('creates public/images directory', () => {
     expect(existsSync(join(projectDir, 'public', 'images'))).toBe(true);
   });
+
+  it('creates eslint.config.js', () => {
+    expect(existsSync(join(projectDir, 'eslint.config.js'))).toBe(true);
+  });
+
+  it('package.json has lint script and eslint devDependencies', () => {
+    const pkg = JSON.parse(
+      require('fs').readFileSync(join(projectDir, 'package.json'), 'utf-8')
+    );
+    expect(pkg.scripts.lint).toContain('eslint');
+    expect(pkg.devDependencies['eslint']).toBeDefined();
+    expect(pkg.devDependencies['typescript-eslint']).toBeDefined();
+  });
 });
 
 describe('scaffoldProject — Next.js', () => {
@@ -180,6 +193,18 @@ describe('scaffoldProject — Next.js', () => {
       require('fs').readFileSync(join(projectDir, 'package.json'), 'utf-8')
     );
     expect(pkg.scripts.dev).toBe('next dev');
+  });
+
+  it('creates eslint.config.mjs', () => {
+    expect(existsSync(join(projectDir, 'eslint.config.mjs'))).toBe(true);
+  });
+
+  it('package.json has eslint and eslint-config-next devDependencies', () => {
+    const pkg = JSON.parse(
+      require('fs').readFileSync(join(projectDir, 'package.json'), 'utf-8')
+    );
+    expect(pkg.devDependencies['eslint']).toBeDefined();
+    expect(pkg.devDependencies['eslint-config-next']).toBeDefined();
   });
 });
 

@@ -8,13 +8,13 @@ import { tmpdir } from 'os';
 import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
 import { findWorkspaceRoot } from './preview.js';
-import { startServer, isPublishedMode } from './server.js';
+import { startServer } from './server.js';
 import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } from './scaffold.js';
 import { resolveApiKey, configureAuth } from './auth.js';
 import { saveToHistory, listHistory, loadHistoryConfig } from './history.js';
 import { generateHeroImage } from './images.js';
 import { resolveRaceModels, saveModels, loadSavedModelsInfo, fetchFreeModels } from './models.js';
-import { generateLandingPage, refinePrompt, FREE_MODELS, MODEL_NOTES, type SiteType, type ThemeOverride, inferSiteType, extractCategoryHint } from '@org/engine-core';
+import { generateLandingPage, refinePrompt, MODEL_NOTES, type SiteType, type ThemeOverride, extractCategoryHint } from '@org/engine-core';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

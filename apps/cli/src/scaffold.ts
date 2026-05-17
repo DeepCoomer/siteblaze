@@ -731,9 +731,27 @@ export default nextConfig;
         tailwindcss: '^3.4.0',
         autoprefixer: '^10.4.0',
         postcss: '^8.4.0',
+        eslint: '^9.0.0',
+        'eslint-config-next': '^15.0.0',
+        '@eslint/eslintrc': '^3.0.0',
         ...(uiLib === 'shadcn' ? { 'tailwindcss-animate': '^1.0.7' } : {}),
       },
     }, null, 2));
+
+    writeFileSync(join(projectDir, 'eslint.config.mjs'), `import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { FlatCompat } from '@eslint/eslintrc';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const compat = new FlatCompat({ baseDirectory: __dirname });
+
+const eslintConfig = [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+];
+
+export default eslintConfig;
+`);
 
     writeFileSync(join(projectDir, 'tsconfig.json'), JSON.stringify({
       compilerOptions: {
@@ -812,6 +830,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         dev: 'vite',
         build: 'tsc && vite build',
         preview: 'vite preview',
+        lint: 'eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0',
       },
       dependencies: {
         react: '^19.0.0',
@@ -831,11 +850,44 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         tailwindcss: '^3.4.0',
         autoprefixer: '^10.4.0',
         postcss: '^8.4.0',
+        eslint: '^9.9.0',
+        '@eslint/js': '^9.9.0',
+        globals: '^15.9.0',
+        'typescript-eslint': '^8.0.1',
+        'eslint-plugin-react-hooks': '^5.1.0',
+        'eslint-plugin-react-refresh': '^0.4.9',
         ...(uiLib === 'shadcn' ? { 'tailwindcss-animate': '^1.0.7' } : {}),
         '@types/react': '^19.0.0',
         '@types/react-dom': '^19.0.0',
       },
     }, null, 2));
+
+    writeFileSync(join(projectDir, 'eslint.config.js'), `import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['dist'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
+  },
+);
+`);
 
     writeFileSync(join(projectDir, 'tsconfig.json'), JSON.stringify({
       compilerOptions: {

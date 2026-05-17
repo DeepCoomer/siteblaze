@@ -1,7 +1,7 @@
 /**
  * Run once after dropping source logos into assets/:
  *   assets/logo-dark.png   — mark on #0F0F0F background (primary)
- *   assets/logo-white.png  — mark on #FFFFFF background
+ *   assets/logo-light.png  — mark on #FFFFFF background
  *
  * Usage:
  *   node assets/resize.mjs
@@ -19,7 +19,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const dir = __dirname;
 
 const dark  = join(dir, 'logo-dark.png');
-const white = join(dir, 'logo-white.png');
+const white = join(dir, 'logo-light.png');
 
 if (!existsSync(dark)) {
   console.error('Missing assets/logo-dark.png — drop the source file in first.');
@@ -54,10 +54,10 @@ console.log('✓  favicon.ico');
 
 // White version outputs (if provided)
 if (existsSync(white)) {
-  await sharp(white).resize(500, 500).toFile(join(dir, 'logo-white-500.png'));
-  console.log('✓  logo-white-500.png');
+  await sharp(white).resize(500, 500).toFile(join(dir, 'logo-light-500.png'));
+  console.log('✓  logo-light-500.png');
 } else {
-  console.log('ℹ  logo-white.png not found — skipping white variants');
+  console.log('ℹ  logo-light.png not found — skipping white variants');
 }
 
 console.log('\nDone. All outputs written to assets/');

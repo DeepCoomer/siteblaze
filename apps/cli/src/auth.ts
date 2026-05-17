@@ -37,7 +37,7 @@ function saveKey(key: string): void {
 
 async function validateApiKey(key: string): Promise<boolean> {
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/models', {
+    const res = await fetch('https://openrouter.ai/api/v1/auth/key', {
       headers: { Authorization: `Bearer ${key}` },
       signal: AbortSignal.timeout(8_000),
     });

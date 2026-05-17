@@ -498,11 +498,12 @@ program
       );
     } catch { /* no hero section — nothing to patch */ }
 
-    const folderName  = finalProjectDir.split('/').at(-1) ?? finalProjectDir;
+    const folderName  = basename(finalProjectDir);
+    const alreadyInDir = resolve(finalProjectDir) === resolve(process.cwd());
     const editPath    = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
     const runCmd      = pkgManager === 'npm' ? 'npm run dev' : `${pkgManager} dev`;
     console.log(`\n  \x1b[1mNext steps\x1b[0m`);
-    console.log(`  \x1b[36mcd ${folderName}\x1b[0m`);
+    if (!alreadyInDir) console.log(`  \x1b[36mcd ${folderName}\x1b[0m`);
     console.log(`  \x1b[36m${pkgManager} install\x1b[0m`);
     console.log(`  \x1b[36m${runCmd}\x1b[0m`);
     if (uiLib === 'shadcn') {

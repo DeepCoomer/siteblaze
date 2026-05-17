@@ -709,7 +709,7 @@ export default nextConfig;
         dev: 'next dev',
         build: 'next build',
         start: 'next start',
-        lint: 'next lint',
+        lint: 'eslint .',
       },
       dependencies: {
         next: '^15.0.0',
@@ -748,6 +748,11 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  {
+    rules: {
+      'react/no-unescaped-entities': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;

@@ -131,6 +131,19 @@ if (existsSync(distDir)) {
   }
 }
 
+// ── 5. Copy favicon into public/ ─────────────────────────────────────────────
+
+const faviconSrc  = join(__dirname, '../../assets/favicon.ico');
+const faviconDest = join(__dirname, 'public', 'favicon.ico');
+
+if (existsSync(faviconSrc)) {
+  mkdirSync(join(__dirname, 'public'), { recursive: true });
+  cpSync(faviconSrc, faviconDest);
+} else {
+  console.warn('⚠  assets/favicon.ico not found — skipping favicon copy');
+}
+
 console.log(`\n✓  CLI bundled     → dist/index.js`);
 console.log(`✓  Web app copied  → web/`);
-console.log(`✓  Templates copied → templates/  (${TEMPLATE_FILES.length} plain + ${SHADCN_SECTION_FILES.length} shadcn)\n`);
+console.log(`✓  Templates copied → templates/  (${TEMPLATE_FILES.length} plain + ${SHADCN_SECTION_FILES.length} shadcn)`);
+console.log(`✓  Favicon copied  → public/favicon.ico\n`);

@@ -10,6 +10,7 @@
     "dist",
     "web",
     "templates",
+    "public",
     "README.md"
   ],
   "engines": {

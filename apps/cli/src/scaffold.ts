@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -817,6 +817,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <title>${config.metadata.siteName}</title>
   </head>
   <body>
@@ -953,6 +954,11 @@ dist
 .env
 .env.local
 `);
+
+  const faviconSrc = join(__dirname, '../public/favicon.ico');
+  if (existsSync(faviconSrc)) {
+    copyFileSync(faviconSrc, join(projectDir, 'public', 'favicon.ico'));
+  }
 
   const editPath = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
   const sectionList = usedTypes.map(t => `- ${t}`).join('\n');

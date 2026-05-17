@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DeepCoomer/siteblaze/main/assets/logo-500.png" alt="siteblaze" width="220" />
+</p>
+
 # siteblaze
 
 **AI picks sections, not code. Clean React. Free. Yours.**

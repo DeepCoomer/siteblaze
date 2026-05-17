@@ -41,6 +41,27 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 
 ---
 
+## Preview mode
+
+Add `--preview` to open a browser editor before any files are written to disk:
+
+```bash
+siteblaze generate "Vault — a fintech app for wealth management" --preview
+```
+
+The editor opens at `http://localhost:3000` with a live page and a settings panel:
+
+- **Site name** — rename the project (sets the zip filename and folder on download)
+- **Theme** — Light, Dark, or Midnight
+- **Font** — Sans-serif, Serif, or Monospace
+- **Colors** — primary and secondary with a color picker or hex input
+- **Theme toggle** — show/hide the theme switcher button on the page
+- **Sections** — reorder, delete, and add new sections; hit ↻ on any section to AI-fill it with fresh content
+
+Changes in the settings panel apply to the live preview automatically. Hit **↓ Download Project** to get a ready-to-run zip. Press `Ctrl+C` in the terminal to stop — your session is saved and can be resumed with `siteblaze open`.
+
+---
+
 ## Commands
 
 | Command | Description |
@@ -65,27 +86,6 @@ The generated project is a standalone repo. `cd` into it, `npm install`, `npm ru
 | `--no-image` | Skip AI hero image generation |
 | `-y, --yes` | Auto-confirm all prompts, use defaults |
 | `--verbose` | Show model racing output |
-
----
-
-## Preview mode
-
-Add `--preview` to open a browser editor before any files are written to disk:
-
-```bash
-siteblaze generate "Vault — a fintech app for wealth management" --preview
-```
-
-The editor opens at `http://localhost:3000` with a live page and a settings panel:
-
-- **Site name** — rename the project (sets the zip filename and folder on download)
-- **Theme** — Light, Dark, or Midnight
-- **Font** — Sans-serif, Serif, or Monospace
-- **Colors** — primary and secondary with a color picker or hex input
-- **Theme toggle** — show/hide the theme switcher button on the page
-- **Sections** — reorder, delete, and add new sections; hit ↻ on any section to AI-fill it with fresh content
-
-Changes in the settings panel apply to the live preview automatically. Hit **↓ Download Project** to get a ready-to-run zip. Press `Ctrl+C` in the terminal to stop — your session is saved and can be resumed with `siteblaze open`.
 
 ---
 

@@ -283,7 +283,17 @@ program
   .description('AI picks sections, not code. Clean React. Free. Yours.')
   .version(CLI_VERSION)
   .hook('preAction', printBanner)
-  .addHelpText('after', '\nRun siteblaze generate --help to see all flags (--preview, --framework, --ui, --theme, --yes, --type, and more).');
+  .addHelpText('after', '\nRun siteblaze generate --help to see all flags (--preview, --framework, --ui, --theme, --yes, --type, and more).')
+  .configureOutput({
+    outputError: (str, write) => {
+      write(str);
+      if (str.includes("missing required argument 'prompt'")) {
+        write('\nExamples:\n');
+        write('  siteblaze generate "SaaS landing page for a project management tool"\n');
+        write('  siteblaze generate "Portfolio for a UX designer" --preview\n\n');
+      }
+    },
+  });
 
 
 // ── generate ─────────────────────────────────────────────────────────────────

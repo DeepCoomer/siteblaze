@@ -125,5 +125,4 @@ export async function configureAuth(): Promise<void> {
   } catch {
     spin.stop(`Key valid · saved to ${CONFIG_FILE}`);
   }
-  process.exit(0);
 }

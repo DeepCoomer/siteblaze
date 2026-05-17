@@ -101,7 +101,7 @@ Changes apply to the live preview automatically. Hit **↓ Download Project** to
 | `-f, --framework <fw>` | `vite` (default) or `next` |
 | `--theme <mode>` | `light` `dark` `midnight` |
 | `--ui <lib>` | `tailwind` (default) or `shadcn` |
-| `--no-image` | Skip AI hero image generation |
+| `--image` | Generate an AI hero image via Pollination AI (default: static placeholder) |
 | `-y, --yes` | Skip all prompts, use defaults |
 | `--verbose` | Show model details and generation source |
 
@@ -116,7 +116,7 @@ my-project/
 │   ├── sections/         ← individual section components
 │   └── theme.ts          ← colors, fonts, theme mode
 ├── public/
-│   └── images/hero.jpg   ← AI-generated hero image
+│   └── images/placeholder.png  ← swap with your own image
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.js

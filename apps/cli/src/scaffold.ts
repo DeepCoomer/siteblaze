@@ -999,11 +999,6 @@ Each section accepts \`content\`, \`variant\`, and \`theme\` props.
   return projectDir;
 }
 
-/**
- * Overwrites src/Home.tsx with a new version that includes the hero
- * image URL. Called after the image has been downloaded and placed in
- * public/images/hero.jpg.
- */
 export function rewriteHome(
   projectDir: string,
   config: ScaffoldConfig,

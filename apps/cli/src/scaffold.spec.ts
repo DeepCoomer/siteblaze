@@ -148,6 +148,10 @@ describe('scaffoldProject — Vite (default)', () => {
     expect(existsSync(join(projectDir, 'public', 'images'))).toBe(true);
   });
 
+  it('copies placeholder.png into public/images', () => {
+    expect(existsSync(join(projectDir, 'public', 'images', 'placeholder.png'))).toBe(true);
+  });
+
   it('creates eslint.config.js', () => {
     expect(existsSync(join(projectDir, 'eslint.config.js'))).toBe(true);
   });

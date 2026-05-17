@@ -60,23 +60,6 @@ siteblaze list-models --refresh
 siteblaze open
 ```
 
-### Flags
-
-| Flag | Description |
-|---|---|
-| `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
-| `-m, --model <id>` | Force a specific OpenRouter model |
-| `-o, --output <path>` | Scaffold directly into this path (the path IS the destination — `--output ./my-app` creates `./my-app/`, not `./my-app/<slug>/`) |
-| `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
-| `-f, --framework <fw>` | `vite` (default) or `next` |
-| `--theme <mode>` | `light` `dark` `midnight` |
-| `--ui <lib>` | `tailwind` (default) or `shadcn` |
-| `--no-image` | Skip AI hero image generation |
-| `-y, --yes` | Skip all prompts, use defaults |
-| `--verbose` | Show model details and generation source |
-
----
-
 ## Preview mode
 
 Add `--preview` to open a browser editor before any files are written to disk:
@@ -100,6 +83,23 @@ The editor opens automatically at `http://localhost:3000`. On the left you'll fi
 The raw JSON is also editable in the panel for advanced changes to section content.
 
 Changes apply to the live preview automatically. Hit **↓ Download Project** to get a ready-to-run zip named after your site. Press `Ctrl+C` to stop — your session is saved and can be resumed with `siteblaze open`.
+
+---
+
+### Flags
+
+| Flag | Description |
+|---|---|
+| `--preview` | Open a live browser editor — tweak theme, colors, sections, then download |
+| `-m, --model <id>` | Force a specific OpenRouter model |
+| `-o, --output <path>` | Scaffold directly into this path (the path IS the destination — `--output ./my-app` creates `./my-app/`, not `./my-app/<slug>/`) |
+| `-t, --type <type>` | Site type: `landing` `portfolio` `agency` `saas` `blog` `ecommerce` `event` |
+| `-f, --framework <fw>` | `vite` (default) or `next` |
+| `--theme <mode>` | `light` `dark` `midnight` |
+| `--ui <lib>` | `tailwind` (default) or `shadcn` |
+| `--no-image` | Skip AI hero image generation |
+| `-y, --yes` | Skip all prompts, use defaults |
+| `--verbose` | Show model details and generation source |
 
 ---
 

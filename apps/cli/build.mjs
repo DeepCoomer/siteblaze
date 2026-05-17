@@ -143,7 +143,20 @@ if (existsSync(faviconSrc)) {
   console.warn('⚠  assets/favicon.ico not found — skipping favicon copy');
 }
 
+// ── 6. Copy placeholder image into public/images/ ────────────────────────────
+
+const placeholderSrc  = join(__dirname, '../../assets/placeholder.png');
+const placeholderDest = join(__dirname, 'public', 'images', 'placeholder.png');
+
+if (existsSync(placeholderSrc)) {
+  mkdirSync(join(__dirname, 'public', 'images'), { recursive: true });
+  cpSync(placeholderSrc, placeholderDest);
+} else {
+  console.warn('⚠  assets/placeholder.png not found — skipping placeholder copy');
+}
+
 console.log(`\n✓  CLI bundled     → dist/index.js`);
 console.log(`✓  Web app copied  → web/`);
 console.log(`✓  Templates copied → templates/  (${TEMPLATE_FILES.length} plain + ${SHADCN_SECTION_FILES.length} shadcn)`);
-console.log(`✓  Favicon copied  → public/favicon.ico\n`);
+console.log(`✓  Favicon copied  → public/favicon.ico`);
+console.log(`✓  Placeholder     → public/images/placeholder.png\n`);

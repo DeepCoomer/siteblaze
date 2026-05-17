@@ -504,7 +504,16 @@ program
         rmSync(tmpImagePath, { force: true });
       }
     } else {
-      console.log(`  \x1b[2m~\x1b[0m  Hero image skipped (using placeholder)`);
+      try {
+        rewriteHome(
+          finalProjectDir,
+          aiResult.config as Parameters<typeof rewriteHome>[1],
+          '/images/placeholder.png',
+          framework,
+          uiLib
+        );
+      } catch { /* no hero section — nothing to patch */ }
+      console.log(`  \x1b[2m~\x1b[0m  Hero image → placeholder`);
     }
 
     const folderName  = finalProjectDir.split('/').at(-1) ?? finalProjectDir;

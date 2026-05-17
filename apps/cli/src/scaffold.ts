@@ -960,6 +960,11 @@ dist
     copyFileSync(faviconSrc, join(projectDir, 'public', 'favicon.ico'));
   }
 
+  const placeholderSrc = join(__dirname, '../public/images/placeholder.png');
+  if (existsSync(placeholderSrc)) {
+    copyFileSync(placeholderSrc, join(projectDir, 'public', 'images', 'placeholder.png'));
+  }
+
   const editPath = framework === 'nextjs' ? 'src/components/Home.tsx' : 'src/Home.tsx';
   const sectionList = usedTypes.map(t => `- ${t}`).join('\n');
   writeFileSync(join(projectDir, 'README.md'), `# ${config.metadata.siteName}

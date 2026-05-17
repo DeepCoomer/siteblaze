@@ -13,7 +13,7 @@ import { scaffoldProject, rewriteHome, toKebab, type Framework, type UiLib } fro
 import { resolveApiKey, configureAuth } from './auth.js';
 import { saveToHistory, listHistory, loadHistoryConfig } from './history.js';
 import { resolveRaceModels, saveModels, loadSavedModelsInfo, fetchFreeModels } from './models.js';
-import { generateLandingPage, refinePrompt, MODEL_NOTES, type SiteType, type ThemeOverride, extractCategoryHint } from '@org/engine-core';
+import { generateLandingPage, refinePrompt, MODEL_NOTES, type SiteType, type ThemeOverride, type LandingPage, extractCategoryHint } from '@org/engine-core';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -275,6 +275,18 @@ async function confirmUiLib(explicit?: string): Promise<UiLib> {
 // CLI
 // ---------------------------------------------------------------------------
 
+function injectPlaceholder(config: LandingPage): LandingPage {
+  return {
+    ...config,
+    sections: config.sections.map(s => {
+      if (s.type !== 'HERO') return s;
+      const c = s.content as { title: string; subtitle: string; ctaText: string; imageUrl?: string };
+      if (c.imageUrl) return s;
+      return { ...s, content: { ...c, imageUrl: '/images/placeholder.png' } };
+    }) as LandingPage['sections'],
+  };
+}
+
 const program = new Command();
 
 program
@@ -396,7 +408,8 @@ program
       const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
       mkdirSync(tempDir, { recursive: true });
       const configPath = join(tempDir, 'config.json');
-      writeFileSync(configPath, JSON.stringify(aiResult.config, null, 2));
+      const previewConfig = injectPlaceholder(aiResult.config as LandingPage);
+      writeFileSync(configPath, JSON.stringify(previewConfig, null, 2));
       console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
       console.log(`  \x1b[2mSession saved — run \x1b[0msiteblaze open\x1b[2m later to reopen. Press Ctrl+C to stop.\x1b[0m\n`);
       const cleanupPreview = () => {
@@ -560,11 +573,11 @@ program
       return;
     }
 
-    const config = loadHistoryConfig(choice as string);
+    const config = loadHistoryConfig(choice as string) as LandingPage;
     const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
     mkdirSync(tempDir, { recursive: true });
     const configPath = join(tempDir, 'config.json');
-    writeFileSync(configPath, JSON.stringify(config, null, 2));
+    writeFileSync(configPath, JSON.stringify(injectPlaceholder(config), null, 2));
 
     console.log(`  \x1b[2mOpening preview — edit in browser, then click Download Project\x1b[0m`);
     console.log(`  \x1b[2mPress Ctrl+C to stop.\x1b[0m\n`);

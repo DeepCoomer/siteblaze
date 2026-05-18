@@ -804,7 +804,7 @@ export function App() {
           <p className="mt-2 text-xs opacity-75">{state.message}</p>
           <p className="mt-4 text-xs text-gray-500">
             Start the full stack with{' '}
-            <code className="font-mono rounded bg-gray-100 px-1 py-0.5">siteblaze preview</code>
+            <code className="font-mono rounded bg-gray-100 px-1 py-0.5">siteblaze generate "..." --preview</code>
           </p>
         </div>
       </div>

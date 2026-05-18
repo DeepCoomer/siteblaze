@@ -1,6 +1,6 @@
 {
   "name": "siteblaze",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "AI picks sections, not code. Clean React. Free. Yours.",
   "type": "module",
   "bin": {
@@ -21,12 +21,17 @@
     "ai",
     "react",
     "tailwind",
+    "tailwindcss",
     "shadcn",
     "scaffold",
     "openrouter",
     "landing-page",
     "nextjs",
-    "vite"
+    "vite",
+    "cli",
+    "generator",
+    "react-generator",
+    "ai-tools"
   ],
   "license": "MIT",
   "author": "deepcoomer",

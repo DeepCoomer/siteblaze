@@ -6,10 +6,15 @@
 
 **AI picks sections, not code. Clean React. Free. Yours.**
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/siteblaze"><img src="https://img.shields.io/npm/v/siteblaze?color=7c3aed&label=npm" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/siteblaze"><img src="https://img.shields.io/npm/dm/siteblaze?color=7c3aed" alt="npm downloads" /></a>
+  <a href="https://github.com/DeepCoomer/siteblaze/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed" alt="MIT license" /></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D20-7c3aed" alt="node >= 20" />
+</p>
+
 ```bash
-npm i -g siteblaze
-siteblaze auth
-siteblaze generate "SaaS landing page for a project management tool"
+npx siteblaze@latest generate "SaaS landing page for a project management tool"
 ```
 
 No browser required. No subscription. Just your terminal, your API key, and a scaffolded project you actually own — or open a live browser editor and download when you're happy.

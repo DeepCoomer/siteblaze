@@ -14,7 +14,7 @@
 **AI picks sections, not code. Clean React. Free. Yours.**
 
 ```bash
-npx siteblaze generate "Syncly — a SaaS project tracker for remote teams"
+npx siteblaze@latest generate "Syncly — a SaaS project tracker for remote teams"
 ```
 
 No browser. No subscription. No blank canvas. Just a complete, runnable React + Tailwind project you own — or tweak it live in the browser and download when you're happy.
@@ -35,7 +35,7 @@ No browser. No subscription. No blank canvas. Just a complete, runnable React + 
 ```bash
 npm install -g siteblaze
 # or run without installing:
-npx siteblaze generate "your prompt"
+npx siteblaze@latest generate "your prompt"
 ```
 
 Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/keys).

@@ -128,7 +128,6 @@ function ThemeToggle({ current, onCycle }: { current: ThemeMode; onCycle: () => 
       onClick={onCycle}
       aria-label={`Switch theme (current: ${current})`}
       className={`
-        fixed bottom-6 right-6 z-50
         flex items-center gap-2 rounded-full px-4 py-2
         text-sm font-medium shadow-xl
         transition-all duration-300 hover:scale-105 active:scale-95
@@ -706,6 +705,7 @@ function ConfigEditor({
           </>
         )}
       </aside>
+
     </>
   );
 }
@@ -717,6 +717,28 @@ function ConfigEditor({
 export function App() {
   const [state, setState] = useState<FetchState>({ status: 'loading' });
   const [liveConfig, setLiveConfig] = useState<unknown>(null);
+  const [downloadState, setDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  async function handleDownloadProject() {
+    setDownloadState('loading');
+    try {
+      const downloadUrl = import.meta.env.DEV ? 'http://localhost:3000/download' : '/download';
+      const res = await fetch(downloadUrl);
+      if (!res.ok) throw new Error(res.statusText);
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const match = disposition.match(/filename[^;=\n]*=(['"]?)([^'";\n]+)\1/);
+      const filename = match?.[2]?.trim() ?? 'project.zip';
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      setDownloadState('idle');
+    } catch {
+      setDownloadState('error');
+      setTimeout(() => setDownloadState('idle'), 3000);
+    }
+  }
 
   const [themeOverride, setThemeOverride] = useState<ThemeMode | null>(() => {
     try {
@@ -808,7 +830,24 @@ export function App() {
   return (
     <>
       <PageRenderer config={effectiveConfig} themeOverride={effectiveTheme} />
-      {enableThemeToggle && <ThemeToggle current={effectiveTheme} onCycle={cycleTheme} />}
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2">
+        <div className="group relative">
+          <button
+            onClick={handleDownloadProject}
+            disabled={downloadState === 'loading'}
+            aria-label="Download Project"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition-all hover:bg-violet-500 disabled:opacity-40"
+          >
+            {downloadState === 'loading' ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : downloadState === 'error' ? '✗' : '↓'}
+          </button>
+          <span className="pointer-events-none absolute bottom-12 right-0 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+            Download Project
+          </span>
+        </div>
+        {enableThemeToggle && <ThemeToggle current={effectiveTheme} onCycle={cycleTheme} />}
+      </div>
       <ConfigEditor config={effectiveConfig} onApply={handleApply} />
     </>
   );

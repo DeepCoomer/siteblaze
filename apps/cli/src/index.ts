@@ -404,6 +404,9 @@ program
 
     // ── Preview mode — open in browser, nothing written to disk yet ──────────
     if (opts.preview) {
+      if (isExplicitOutput) {
+        console.log(`  \x1b[33mNote: --output is ignored in preview mode — download the project from the browser instead.\x1b[0m`);
+      }
       const historyPath = saveToHistory(aiResult.config, prompt);
       const tempDir = join(tmpdir(), `siteblaze-preview-${randomBytes(4).toString('hex')}`);
       mkdirSync(tempDir, { recursive: true });
@@ -552,7 +555,7 @@ program
       message: opts.delete ? 'Choose a generation to delete' : 'Choose a generation to re-open',
       options: entries.map(e => ({
         value: e.path,
-        label: `${e.siteName}  (${new Date(e.savedAt).toLocaleDateString()})`,
+        label: `${e.siteName}  (${new Date(e.savedAt).toLocaleString()})`,
         hint: e.prompt.length > 60 ? e.prompt.slice(0, 60) + '…' : e.prompt,
       })),
     });

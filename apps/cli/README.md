@@ -88,6 +88,8 @@ The raw JSON is also editable in the panel for advanced changes to section conte
 
 Changes apply to the live preview automatically. Hit **↓ Download Project** to get a ready-to-run zip named after your site. Press `Ctrl+C` to stop — your session is saved and can be resumed with `siteblaze open`.
 
+History is stored in `~/.config/siteblaze/history/` and auto-pruned to the 10 most recent sessions. Use `siteblaze open --delete` to remove entries manually.
+
 ---
 
 ### Flags

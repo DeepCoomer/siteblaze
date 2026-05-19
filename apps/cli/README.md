@@ -40,6 +40,10 @@ npx siteblaze@latest generate "your prompt"
 
 Requires Node.js ≥ 20 and a free [OpenRouter API key](https://openrouter.ai/keys).
 
+```bash
+siteblaze auth  # save your key once — prompted automatically on first generate too
+```
+
 ---
 
 ## Usage
